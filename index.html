@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ficha de Consolidação | Novos Convertidos</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="page">
+  <div class="header">
+    <img class="logo" src="assets/logo.png" alt="Logo da igreja">
+    <h1>Ficha de Consolidação</h1>
+    <p>Que alegria ter você conosco! Preencha os dados abaixo para que possamos te acompanhar nessa nova etapa.</p>
+  </div>
+
+  <div class="card" id="form-card">
+    <div class="form-error-banner" id="form-error-banner">Verifique os campos destacados abaixo antes de continuar.</div>
+
+    <form id="ficha-form" novalidate>
+
+      <fieldset>
+        <legend>Dados pessoais</legend>
+
+        <div class="field">
+          <label for="nome_completo">Nome completo <span class="req">*</span></label>
+          <input type="text" id="nome_completo" name="nome_completo" required autocomplete="name">
+          <div class="error-text">Informe o nome completo.</div>
+        </div>
+
+        <div class="row cols-2">
+          <div class="field">
+            <label for="telefone">Telefone / WhatsApp <span class="req">*</span></label>
+            <input type="tel" id="telefone" name="telefone" placeholder="(99) 99999-9999" required inputmode="numeric">
+            <div class="error-text">Informe um telefone válido.</div>
+          </div>
+          <div class="field">
+            <label for="idade">Idade <span class="req">*</span></label>
+            <input type="number" id="idade" name="idade" min="0" max="120" required inputmode="numeric">
+            <div class="error-text">Informe a idade.</div>
+          </div>
+        </div>
+
+        <div class="row cols-2">
+          <div class="field">
+            <label for="instagram">Instagram</label>
+            <input type="text" id="instagram" name="instagram" placeholder="@usuario">
+          </div>
+          <div class="field">
+            <label for="profissao">Profissão</label>
+            <input type="text" id="profissao" name="profissao">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Endereço</legend>
+
+        <div class="row cols-3">
+          <div class="field">
+            <label for="endereco">Endereço <span class="req">*</span></label>
+            <input type="text" id="endereco" name="endereco" required>
+            <div class="error-text">Informe o endereço.</div>
+          </div>
+          <div class="field">
+            <label for="numero">Nº</label>
+            <input type="text" id="numero" name="numero" inputmode="numeric">
+          </div>
+        </div>
+
+        <div class="row cols-2">
+          <div class="field">
+            <label for="bairro">Bairro <span class="req">*</span></label>
+            <input type="text" id="bairro" name="bairro" required>
+            <div class="error-text">Informe o bairro.</div>
+          </div>
+          <div class="field">
+            <label for="cidade">Cidade <span class="req">*</span></label>
+            <input type="text" id="cidade" name="cidade" required>
+            <div class="error-text">Informe a cidade.</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="ponto_referencia">Ponto de referência</label>
+          <input type="text" id="ponto_referencia" name="ponto_referencia">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Estado civil e família</legend>
+
+        <div class="field">
+          <label for="estado_civil">Estado civil <span class="req">*</span></label>
+          <select id="estado_civil" name="estado_civil" required>
+            <option value="" disabled selected>Selecione...</option>
+            <option value="Solteiro(a)">Solteiro(a)</option>
+            <option value="Casado(a)">Casado(a)</option>
+            <option value="União estável">União estável</option>
+            <option value="Viúvo(a)">Viúvo(a)</option>
+            <option value="Divorciado(a)">Divorciado(a)</option>
+          </select>
+          <div class="error-text">Selecione o estado civil.</div>
+        </div>
+
+        <div class="field">
+          <label>Tem filhos? <span class="req">*</span></label>
+          <div class="choice-group" data-radio-group="tem_filhos">
+            <label class="choice">
+              <input type="radio" name="tem_filhos" value="Sim" required>
+              <span>Sim</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="tem_filhos" value="Não">
+              <span>Não</span>
+            </label>
+          </div>
+          <div class="error-text">Selecione uma opção.</div>
+
+          <div class="conditional" id="cond-quantos-filhos">
+            <label for="quantos_filhos">Quantos?</label>
+            <input type="number" id="quantos_filhos" name="quantos_filhos" min="1" max="30" inputmode="numeric">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Sua decisão hoje é?</legend>
+
+        <div class="field">
+          <div class="choice-group" data-radio-group="decisao">
+            <label class="choice">
+              <input type="radio" name="decisao" value="Voltando para Jesus" required>
+              <span>Voltando para Jesus</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="decisao" value="Entregando pela primeira vez a vida para Jesus">
+              <span>Entregando pela primeira vez a vida para Jesus</span>
+            </label>
+          </div>
+          <div class="error-text">Selecione uma opção.</div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Qual culto você participou?</legend>
+
+        <div class="field">
+          <div class="choice-group" data-radio-group="culto">
+            <label class="choice">
+              <input type="radio" name="culto" value="Noite da Unção" required>
+              <span>Noite da Unção</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="culto" value="Domingo">
+              <span>Domingo</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="culto" value="Culto especial">
+              <span>Culto especial</span>
+            </label>
+          </div>
+          <div class="error-text">Selecione uma opção.</div>
+
+          <div class="conditional" id="cond-culto-uncao">
+            <div class="field">
+              <label>Qual dia?</label>
+              <div class="choice-group" data-radio-group="dia_uncao">
+                <label class="choice">
+                  <input type="radio" name="dia_uncao" value="Terça">
+                  <span>Terça</span>
+                </label>
+                <label class="choice">
+                  <input type="radio" name="dia_uncao" value="Quarta">
+                  <span>Quarta</span>
+                </label>
+                <label class="choice">
+                  <input type="radio" name="dia_uncao" value="Quinta">
+                  <span>Quinta</span>
+                </label>
+              </div>
+              <div class="error-text">Selecione o dia.</div>
+            </div>
+          </div>
+
+          <div class="conditional" id="cond-culto-domingo">
+            <div class="field">
+              <label>Qual horário?</label>
+              <div class="choice-group" data-radio-group="horario_domingo">
+                <label class="choice">
+                  <input type="radio" name="horario_domingo" value="10h">
+                  <span>10h</span>
+                </label>
+                <label class="choice">
+                  <input type="radio" name="horario_domingo" value="15h">
+                  <span>15h</span>
+                </label>
+                <label class="choice">
+                  <input type="radio" name="horario_domingo" value="17h">
+                  <span>17h</span>
+                </label>
+                <label class="choice">
+                  <input type="radio" name="horario_domingo" value="19h">
+                  <span>19h</span>
+                </label>
+              </div>
+              <div class="error-text">Selecione o horário.</div>
+            </div>
+          </div>
+
+          <div class="conditional" id="cond-culto-especial">
+            <div class="field">
+              <label for="qual_culto_especial">Qual culto?</label>
+              <input type="text" id="qual_culto_especial" name="qual_culto_especial" placeholder="Ex: Culto de aniversário da igreja">
+              <div class="error-text">Informe qual foi o culto.</div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Como você chegou em nossa igreja?</legend>
+
+        <div class="field">
+          <div class="choice-group" data-radio-group="como_chegou">
+            <label class="choice">
+              <input type="radio" name="como_chegou" value="Facebook" required>
+              <span>Facebook</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="como_chegou" value="Instagram">
+              <span>Instagram</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="como_chegou" value="Foi convidado por alguém">
+              <span>Foi convidado por alguém</span>
+            </label>
+          </div>
+          <div class="error-text">Selecione uma opção.</div>
+
+          <div class="conditional" id="cond-quem-convidou">
+            <label for="quem_convidou">Quem te convidou?</label>
+            <input type="text" id="quem_convidou" name="quem_convidou">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Já participou de alguma rede em nossa igreja?</legend>
+
+        <div class="field">
+          <div class="choice-group" data-radio-group="participou_rede">
+            <label class="choice">
+              <input type="radio" name="participou_rede" value="Sim" required>
+              <span>Sim</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="participou_rede" value="Não">
+              <span>Não</span>
+            </label>
+          </div>
+          <div class="error-text">Selecione uma opção.</div>
+
+          <div class="conditional" id="cond-qual-rede">
+            <label for="qual_rede">Qual?</label>
+            <input type="text" id="qual_rede" name="qual_rede">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Consolidação</legend>
+
+        <div class="field">
+          <label for="preenchido_por">Nome de quem preencheu a ficha da consolidação <span class="req">*</span></label>
+          <input type="text" id="preenchido_por" name="preenchido_por" required>
+          <div class="error-text">Informe o nome de quem preencheu a ficha.</div>
+        </div>
+      </fieldset>
+
+      <div class="submit-row">
+        <button type="submit" class="btn btn-primary" id="submit-btn">Enviar ficha</button>
+      </div>
+    </form>
+
+    <div class="success-screen" id="success-screen">
+      <div class="icon">&#10003;</div>
+      <h2>Ficha enviada com sucesso!</h2>
+      <p>Obrigado por preencher os dados. A equipe de consolidação já pode acompanhar essa pessoa.</p>
+      <button class="btn btn-secondary" id="new-form-btn">Preencher nova ficha</button>
+    </div>
+  </div>
+
+  <p class="footer-note">Seus dados são usados apenas para acompanhamento pastoral.</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/config.js"></script>
+<script src="js/form.js"></script>
+</body>
+</html>
