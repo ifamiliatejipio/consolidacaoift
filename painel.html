@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Consolidação</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- TELA DE LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <img src="assets/logo.png" alt="Logo">
+    <h1>Painel de Consolidação</h1>
+    <div class="field" style="text-align:left">
+      <label for="senha">Senha de acesso</label>
+      <input type="password" id="senha" placeholder="Digite a senha">
+      <div class="error-text" id="login-error">Senha incorreta. Tente novamente.</div>
+    </div>
+    <button class="btn btn-primary" id="login-btn" style="margin-top:10px">Entrar</button>
+  </div>
+</div>
+
+<!-- PAINEL -->
+<div class="page" id="painel-screen" style="display:none; max-width: 1080px;">
+  <div class="topbar">
+    <div class="brand">
+      <img src="assets/logo.png" alt="Logo">
+      <h1>Painel de Consolidação</h1>
+    </div>
+    <button class="btn btn-secondary" id="logout-btn">Sair</button>
+  </div>
+
+  <div class="stats-row" id="stats-row">
+    <div class="stat-card"><div class="num" id="stat-total">–</div><div class="label">Fichas cadastradas</div></div>
+    <div class="stat-card"><div class="num" id="stat-primeira">–</div><div class="label">1ª vez com Jesus</div></div>
+    <div class="stat-card"><div class="num" id="stat-voltando">–</div><div class="label">Voltando para Jesus</div></div>
+    <div class="stat-card"><div class="num" id="stat-pendentes">–</div><div class="label">Pendentes de encaminhar</div></div>
+  </div>
+
+  <div class="toolbar">
+    <input type="text" id="search-input" placeholder="Buscar por nome, bairro ou telefone...">
+    <select id="filter-decisao">
+      <option value="">Todas as decisões</option>
+      <option value="Voltando para Jesus">Voltando para Jesus</option>
+      <option value="Entregando pela primeira vez a vida para Jesus">1ª vez com Jesus</option>
+    </select>
+    <select id="filter-rede">
+      <option value="">Todos (rede)</option>
+      <option value="pendente">Pendente de encaminhar</option>
+      <option value="feito">Já encaminhado</option>
+    </select>
+    <select id="filter-categoria">
+      <option value="">Todas as categorias</option>
+      <option value="Eles">Eles</option>
+      <option value="Elas">Elas</option>
+      <option value="Topo">Topo</option>
+    </select>
+    <select id="filter-mes">
+      <option value="">Todos os meses</option>
+    </select>
+    <button class="btn btn-secondary" id="refresh-btn">↻ Atualizar</button>
+    <button class="btn btn-primary" id="report-btn">📄 Gerar relatório PDF</button>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table id="fichas-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Nome</th>
+            <th>Telefone</th>
+            <th>Bairro</th>
+            <th>Decisão</th>
+            <th>Culto</th>
+            <th>Rede</th>
+          </tr>
+        </thead>
+        <tbody id="fichas-tbody"></tbody>
+      </table>
+    </div>
+    <div class="empty-state" id="empty-state" style="display:none">Nenhuma ficha encontrada.</div>
+  </div>
+</div>
+
+<!-- MODAL DE DETALHES -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-nome">Detalhes da ficha</h2>
+      <div class="modal-header-actions">
+        <button class="btn btn-secondary btn-sm" id="modal-pdf-btn">⬇ Exportar PDF</button>
+        <button class="btn btn-danger btn-sm" id="modal-delete-btn">🗑 Excluir</button>
+        <button class="modal-close" id="modal-close">&times;</button>
+      </div>
+    </div>
+    <div class="detail-grid" id="modal-detail-grid"></div>
+
+    <div class="rede-box">
+      <label for="modal-rede-input">Encaminhado(a) à rede</label>
+      <p class="hint" style="margin-top:-2px; margin-bottom:10px;">Preenchido pela pessoa responsável pela consolidação.</p>
+      <div class="rede-row">
+        <input type="text" id="modal-rede-input" placeholder="Ex: Rede Jovens - Célula Central">
+        <select id="modal-rede-categoria">
+          <option value="">Categoria</option>
+          <option value="Eles">Eles</option>
+          <option value="Elas">Elas</option>
+          <option value="Topo">Topo</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="modal-save-btn" style="margin-top:12px">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/config.js"></script>
+<script src="js/painel.js"></script>
+</body>
+</html>
