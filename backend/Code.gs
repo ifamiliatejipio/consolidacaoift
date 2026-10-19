@@ -34,7 +34,9 @@ const SHEET_NAME = 'Fichas';
 // Como habilitar (veja o passo a passo completo no INSTRUCOES.md):
 // 1. No Telegram, converse com @BotFather e crie um bot novo (/newbot).
 //    Ele te dá um "token" (algo como 123456:ABC-DEF...).
-// 2. Cole esse token em TELEGRAM_BOT_TOKEN abaixo.
+// 2. Guarde esse token em Configurações do projeto > Propriedades do script,
+//    com o nome TELEGRAM_BOT_TOKEN (recomendado: assim ele não se perde quando
+//    o código for colado de novo). Também funciona colar em TELEGRAM_BOT_TOKEN abaixo.
 // 3. Cada pessoa (ou o grupo) que vai receber os avisos precisa mandar
 //    QUALQUER mensagem pro bot (ou o bot precisa ser adicionado ao grupo
 //    e alguém mandar uma mensagem lá).
@@ -45,12 +47,11 @@ const SHEET_NAME = 'Fichas';
 //    chegou a mensagem de teste.
 // =================================================================
 
-// ATENÇÃO: ainda falta o TELEGRAM_BOT_TOKEN (veja a linha abaixo) — por isso
-// deixei ATIVADO em "false" por enquanto. Assim que colar o token recebido do
-// @BotFather, troque para "true".
-const TELEGRAM_NOTIFICACOES_ATIVADO = false; // true para ligar, false para desligar
+// Só envia se houver token (na propriedade do script ou na linha abaixo).
+const TELEGRAM_NOTIFICACOES_ATIVADO = true; // true para ligar, false para desligar
 
-const TELEGRAM_BOT_TOKEN = ''; // COLE AQUI o token recebido do @BotFather (ex: 123456789:AAHk3jX...)
+// Deixe vazio para usar a propriedade do script TELEGRAM_BOT_TOKEN (recomendado).
+const TELEGRAM_BOT_TOKEN = '';
 
 const TELEGRAM_CHAT_IDS = [
   // Adicione um chat_id para cada pessoa OU grupo que deve ser avisado.
@@ -247,11 +248,22 @@ function criarFicha_(body) {
     return body[col] !== undefined ? body[col] : '';
   });
 
-  sheet.appendRow(row);
+  // A trava garante que duas fichas enviadas ao mesmo tempo não recebam o
+  // mesmo número do dia.
+  const lock = LockService.getScriptLock();
+  let numeroDoDia = null;
+  lock.waitLock(20000);
+  try {
+    sheet.appendRow(row);
+    SpreadsheetApp.flush();
+    numeroDoDia = contarFichasDoDia_(sheet, timestamp);
+  } finally {
+    lock.releaseLock();
+  }
 
   // Não deixa uma falha no Telegram impedir o cadastro da ficha.
   try {
-    enviarNotificacoesTelegram_(body);
+    enviarNotificacoesTelegram_(body, numeroDoDia, timestamp);
   } catch (err) {
     console.error('Falha ao enviar notificações no Telegram: ' + err);
   }
@@ -260,18 +272,51 @@ function criarFicha_(body) {
 }
 
 /**
+ * Conta quantas fichas foram cadastradas no mesmo dia de "data" (no fuso
+ * horário do projeto), incluindo a que acabou de ser gravada. Assim a
+ * numeração recomeça do 1 a cada dia.
+ */
+function contarFichasDoDia_(sheet, data) {
+  const fuso = Session.getScriptTimeZone();
+  const diaAlvo = Utilities.formatDate(data, fuso, 'yyyy-MM-dd');
+  const header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const tsCol = header.indexOf('timestamp');
+  if (tsCol === -1 || sheet.getLastRow() < 2) return null;
+
+  const valores = sheet.getRange(2, tsCol + 1, sheet.getLastRow() - 1, 1).getValues();
+  let total = 0;
+  valores.forEach(function (linha) {
+    const v = linha[0];
+    const d = v instanceof Date ? v : (v ? new Date(v) : null);
+    if (d && !isNaN(d.getTime()) && Utilities.formatDate(d, fuso, 'yyyy-MM-dd') === diaAlvo) total++;
+  });
+  return total;
+}
+
+function tokenTelegram_() {
+  return TELEGRAM_BOT_TOKEN || PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN') || '';
+}
+
+/**
  * Envia a notificação de uma nova ficha para cada chat_id cadastrado em
  * TELEGRAM_CHAT_IDS (pessoa ou grupo), via Telegram Bot API. Cada envio é
  * independente — se um chat falhar, os outros ainda recebem a mensagem
  * normalmente.
  */
-function enviarNotificacoesTelegram_(dados) {
+function enviarNotificacoesTelegram_(dados, numeroDoDia, data) {
   if (!TELEGRAM_NOTIFICACOES_ATIVADO) return;
-  if (!TELEGRAM_BOT_TOKEN) return;
+  const token = tokenTelegram_();
+  if (!token) return;
   if (!TELEGRAM_CHAT_IDS || TELEGRAM_CHAT_IDS.length === 0) return;
 
-  const texto = 'FICHA DE ' + (dados.nome_completo || '–').toUpperCase() + ' FOI PREENCHIDA COM SUCESSO!';
-  const url = 'https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN + '/sendMessage';
+  // Ex: "Nº 3 (19/10) — FICHA DE MARIA DA SILVA FOI PREENCHIDA COM SUCESSO!"
+  let prefixo = '';
+  if (numeroDoDia) {
+    const dia = Utilities.formatDate(data || new Date(), Session.getScriptTimeZone(), 'dd/MM');
+    prefixo = 'Nº ' + numeroDoDia + ' (' + dia + ') — ';
+  }
+  const texto = prefixo + 'FICHA DE ' + (dados.nome_completo || '–').toUpperCase() + ' FOI PREENCHIDA COM SUCESSO!';
+  const url = 'https://api.telegram.org/bot' + token + '/sendMessage';
 
   TELEGRAM_CHAT_IDS.forEach(function (chatId) {
     try {
@@ -295,7 +340,7 @@ function enviarNotificacoesTelegram_(dados) {
 function testarNotificacaoTelegram() {
   enviarNotificacoesTelegram_({
     nome_completo: 'Fulano de Tal (teste)'
-  });
+  }, 1, new Date());
 }
 
 function atualizarRede_(body) {

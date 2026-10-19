@@ -192,10 +192,7 @@ O sistema pode avisar no Telegram assim que uma ficha é enviada, usando a **API
    https://api.telegram.org/bot<TOKEN>/getUpdates
    ```
    Vai aparecer um texto com `"chat":{"id":...`. Esse número é o **chat_id** — de pessoas é positivo, de grupos é negativo (ex: `-1001234567890`). Repita esse acesso depois de cada nova pessoa/grupo interagir com o bot, pra pegar o chat_id de cada um.
-6. Abra o arquivo `backend/Code.gs` (o mesmo que você colou no Apps Script) e encontre a seção **"NOTIFICAÇÃO NO TELEGRAM"**, perto do topo. Cole o token:
-   ```js
-   const TELEGRAM_BOT_TOKEN = '123456789:AAHk3jX...';
-   ```
+6. Guarde o token nas **Propriedades do script** (no Apps Script: ⚙️ Configurações do projeto → Propriedades do script → Adicionar propriedade), com o nome **`TELEGRAM_BOT_TOKEN`** e o token como valor. Assim ele não se perde quando o `Code.gs` for colado de novo numa atualização.
 7. Adicione os chat_ids encontrados no passo 5:
    ```js
    const TELEGRAM_CHAT_IDS = [
@@ -203,17 +200,15 @@ O sistema pode avisar no Telegram assim que uma ficha é enviada, usando a **API
      '-1001234567890',
    ];
    ```
-8. Troque para ativar as notificações:
-   ```js
-   const TELEGRAM_NOTIFICACOES_ATIVADO = true;
-   ```
+8. As notificações já vêm ligadas (`TELEGRAM_NOTIFICACOES_ATIVADO = true`) e só são enviadas quando existe um token. Para desligar, troque para `false`.
 9. Salve, e no menu suspenso ao lado de "Depurar" escolha a função **`testarNotificacaoTelegram`** e clique em **Executar** (▶). Na primeira vez o Google vai pedir uma nova permissão ("Conectar-se a um serviço externo") — autorize normalmente. Confira se a mensagem de teste chegou em cada pessoa/grupo cadastrado.
 10. Publique uma nova versão do Web App (**Implantar → Gerenciar implantações → ícone de lápis → Nova versão → Implantar**) para as mudanças valerem de verdade no site.
 
 Pronto — a partir daí, toda ficha nova enviada avisa automaticamente todo mundo da lista, com a mensagem:
 ```
-FICHA DE [NOME DA PESSOA] FOI PREENCHIDA COM SUCESSO!
+Nº 3 (19/10) — FICHA DE [NOME DA PESSOA] FOI PREENCHIDA COM SUCESSO!
 ```
+O número é a contagem de fichas **daquele dia** (recomeça do 1 a cada dia, no fuso horário do projeto — confira em ⚙️ Configurações do projeto → Fuso horário que está como `(GMT-03:00) Horário de Brasília`).
 Se uma ficha for cadastrada e, por qualquer motivo, o envio do Telegram falhar (ex: internet instável), a ficha continua sendo salva normalmente na planilha — só a notificação que não chega.
 
 > A API de bots do Telegram é oficial e gratuita (mantida pelo próprio Telegram), então é bem mais estável do que os "gambiarras" não-oficiais que existem para WhatsApp — não deve dar os mesmos problemas de instabilidade ou incompatibilidade com contas Business que você teve antes. A única troca é que quem for receber o aviso precisa ter o Telegram instalado (é gratuito e funciona em qualquer celular).
