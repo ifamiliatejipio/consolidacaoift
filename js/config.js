@@ -8,4 +8,4 @@
 // const API_URL = "https://script.google.com/macros/s/AKfycb.../exec";
 // ============================================================
 
-const API_URL = "https://script.google.com/macros/s/AKfycbzafBMJz-d-CYaI-FcQhsM_J2S0-olwGv9nqFGe3VhySzyaOA-KTcdGaTv2hTHuYY2feg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbx5-rOGpktpfWqGCvUjma89BTbehTIUoC9GL6EfunZirKEKctZ__ChB-wf-gmyC4B7inA/exec";
