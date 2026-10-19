@@ -392,6 +392,19 @@ thead th {
   top: 0;
 }
 
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+th.sortable:hover { text-decoration: underline; }
+th.sortable::after {
+  content: ' ↕';
+  opacity: 0.35;
+  font-size: 0.8em;
+}
+th.sortable.sort-asc::after { content: ' ▲'; opacity: 1; }
+th.sortable.sort-desc::after { content: ' ▼'; opacity: 1; }
+
 tbody td {
   padding: 12px 14px;
   border-top: 1px solid var(--border);

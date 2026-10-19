@@ -40,6 +40,10 @@
   let senhaAtual = '';
   let perfilAtual = '';
   let selectedIds = new Set();
+  // Ordenação da tabela ao clicar no cabeçalho (padrão: mais recentes primeiro)
+  let ordemCampo = 'data';
+  let ordemDirecao = 'desc';
+  const sortHeaders = document.querySelectorAll('th.sortable');
 
   function showToast(msg, type) {
     toast.textContent = msg;
@@ -212,9 +216,63 @@
       return true;
     });
 
-    fichasFiltradasAtual = filtrado;
-    renderTable(filtrado);
+    fichasFiltradasAtual = ordenarFichas(filtrado);
+    atualizarCabecalhosOrdem();
+    renderTable(fichasFiltradasAtual);
   }
+
+  // --- Ordenação por coluna ---
+  // Valores vazios ficam sempre no fim, em qualquer direção.
+  function valorOrdenacao(f, campo) {
+    switch (campo) {
+      case 'data': return f.timestamp || '';
+      case 'nome': return f.nome_completo || '';
+      case 'idade': {
+        const n = parseInt(f.idade, 10);
+        return isNaN(n) ? '' : n;
+      }
+      case 'telefone': return String(f.telefone || '').replace(/\D/g, '');
+      case 'bairro': return f.bairro || '';
+      case 'decisao': return f.decisao ? decisaoResumo(f.decisao) : '';
+      case 'culto': return f.culto ? resumoCulto(f) : '';
+      case 'rede': return (f.encaminhado_rede && f.encaminhado_rede.trim()) ? resumoRede(f).texto : '';
+      default: return '';
+    }
+  }
+
+  function ordenarFichas(lista) {
+    const fator = ordemDirecao === 'asc' ? 1 : -1;
+    return lista.slice().sort((a, b) => {
+      const va = valorOrdenacao(a, ordemCampo);
+      const vb = valorOrdenacao(b, ordemCampo);
+      const vazioA = va === '';
+      const vazioB = vb === '';
+      if (vazioA || vazioB) return vazioA === vazioB ? 0 : (vazioA ? 1 : -1);
+      if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * fator;
+      return String(va).localeCompare(String(vb), 'pt-BR', { sensitivity: 'base', numeric: true }) * fator;
+    });
+  }
+
+  function atualizarCabecalhosOrdem() {
+    sortHeaders.forEach(th => {
+      th.classList.remove('sort-asc', 'sort-desc');
+      if (th.dataset.sort === ordemCampo) th.classList.add('sort-' + ordemDirecao);
+    });
+  }
+
+  sortHeaders.forEach(th => {
+    th.addEventListener('click', () => {
+      const campo = th.dataset.sort;
+      if (campo === ordemCampo) {
+        ordemDirecao = ordemDirecao === 'asc' ? 'desc' : 'asc';
+      } else {
+        ordemCampo = campo;
+        // Data começa pelos mais recentes; as outras colunas em ordem crescente (A→Z, menor idade).
+        ordemDirecao = campo === 'data' ? 'desc' : 'asc';
+      }
+      aplicarFiltros();
+    });
+  });
 
   searchInput.addEventListener('input', aplicarFiltros);
   filterDecisao.addEventListener('change', aplicarFiltros);
@@ -653,9 +711,9 @@
   });
 
   // Fichas individuais das selecionadas, todas juntas num único PDF
-  // (uma ficha por página), na mesma ordem em que aparecem na tabela.
+  // (uma ficha por página), na mesma ordenação escolhida na tabela.
   bulkPdfBtn.addEventListener('click', () => {
-    const selecionadas = allFichas.filter(f => selectedIds.has(f.id));
+    const selecionadas = ordenarFichas(allFichas.filter(f => selectedIds.has(f.id)));
     if (!selecionadas.length) return;
     abrirImpressaoFichas(selecionadas);
   });
