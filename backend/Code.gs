@@ -293,6 +293,50 @@ function contarFichasDoDia_(sheet, data) {
   return total;
 }
 
+/**
+ * Monta a mensagem do Telegram (formatada em HTML), por exemplo:
+ *
+ *   ✝️ NOVA FICHA DE CONSOLIDAÇÃO
+ *   🔢 Ficha nº 3 do dia · 19/10/2026 às 19:42
+ *
+ *   👤 Nome: Maria da Silva
+ *   🎂 Idade: 23 anos
+ *   📱 Telefone: (11) 99999-9999
+ *   📍 Bairro: Centro
+ *   🤝 Convidado(a) por: João Souza   (só aparece se foi convidado)
+ *
+ *   ✅ Ficha preenchida com sucesso!
+ */
+function montarMensagemTelegram_(dados, numeroDoDia, data) {
+  const fuso = Session.getScriptTimeZone();
+  const quando = Utilities.formatDate(data, fuso, "dd/MM/yyyy 'às' HH:mm");
+  const linhas = [];
+
+  linhas.push('✝️ <b>NOVA FICHA DE CONSOLIDAÇÃO</b>');
+  linhas.push(numeroDoDia
+    ? '🔢 <b>Ficha nº ' + numeroDoDia + ' do dia</b> · ' + quando
+    : '📅 ' + quando);
+  linhas.push('');
+  linhas.push('👤 <b>Nome:</b> ' + htmlTelegram_(dados.nome_completo || '–'));
+  if (dados.idade) linhas.push('🎂 <b>Idade:</b> ' + htmlTelegram_(dados.idade) + ' anos');
+  if (dados.telefone) linhas.push('📱 <b>Telefone:</b> ' + htmlTelegram_(dados.telefone));
+  if (dados.bairro) linhas.push('📍 <b>Bairro:</b> ' + htmlTelegram_(dados.bairro));
+  if (dados.quem_convidou && String(dados.quem_convidou).trim()) {
+    linhas.push('🤝 <b>Convidado(a) por:</b> ' + htmlTelegram_(dados.quem_convidou));
+  }
+  linhas.push('');
+  linhas.push('✅ <i>Ficha preenchida com sucesso!</i>');
+  return linhas.join('\n');
+}
+
+// Escapa os caracteres especiais do modo HTML do Telegram.
+function htmlTelegram_(valor) {
+  return String(valor).trim()
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 function tokenTelegram_() {
   return TELEGRAM_BOT_TOKEN || PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN') || '';
 }
@@ -309,13 +353,7 @@ function enviarNotificacoesTelegram_(dados, numeroDoDia, data) {
   if (!token) return;
   if (!TELEGRAM_CHAT_IDS || TELEGRAM_CHAT_IDS.length === 0) return;
 
-  // Ex: "Nº 3 (19/10) — FICHA DE MARIA DA SILVA FOI PREENCHIDA COM SUCESSO!"
-  let prefixo = '';
-  if (numeroDoDia) {
-    const dia = Utilities.formatDate(data || new Date(), Session.getScriptTimeZone(), 'dd/MM');
-    prefixo = 'Nº ' + numeroDoDia + ' (' + dia + ') — ';
-  }
-  const texto = prefixo + 'FICHA DE ' + (dados.nome_completo || '–').toUpperCase() + ' FOI PREENCHIDA COM SUCESSO!';
+  const texto = montarMensagemTelegram_(dados, numeroDoDia, data || new Date());
   const url = 'https://api.telegram.org/bot' + token + '/sendMessage';
 
   TELEGRAM_CHAT_IDS.forEach(function (chatId) {
@@ -323,7 +361,7 @@ function enviarNotificacoesTelegram_(dados, numeroDoDia, data) {
       UrlFetchApp.fetch(url, {
         method: 'post',
         contentType: 'application/x-www-form-urlencoded',
-        payload: { chat_id: String(chatId), text: texto },
+        payload: { chat_id: String(chatId), text: texto, parse_mode: 'HTML' },
         muteHttpExceptions: true
       });
     } catch (err) {
@@ -339,7 +377,11 @@ function enviarNotificacoesTelegram_(dados, numeroDoDia, data) {
  */
 function testarNotificacaoTelegram() {
   enviarNotificacoesTelegram_({
-    nome_completo: 'Fulano de Tal (teste)'
+    nome_completo: 'Fulano de Tal (teste)',
+    idade: '25',
+    telefone: '(99) 99999-9999',
+    bairro: 'Centro',
+    quem_convidou: 'Ciclano (teste)'
   }, 1, new Date());
 }
 

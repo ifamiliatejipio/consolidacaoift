@@ -206,9 +206,18 @@ O sistema pode avisar no Telegram assim que uma ficha é enviada, usando a **API
 
 Pronto — a partir daí, toda ficha nova enviada avisa automaticamente todo mundo da lista, com a mensagem:
 ```
-Nº 3 (19/10) — FICHA DE [NOME DA PESSOA] FOI PREENCHIDA COM SUCESSO!
+✝️ NOVA FICHA DE CONSOLIDAÇÃO
+🔢 Ficha nº 3 do dia · 19/10/2026 às 19:42
+
+👤 Nome: Maria da Silva
+🎂 Idade: 23 anos
+📱 Telefone: (11) 99999-9999
+📍 Bairro: Centro
+🤝 Convidado(a) por: João Souza
+
+✅ Ficha preenchida com sucesso!
 ```
-O número é a contagem de fichas **daquele dia** (recomeça do 1 a cada dia, no fuso horário do projeto — confira em ⚙️ Configurações do projeto → Fuso horário que está como `(GMT-03:00) Horário de Brasília`).
+A linha "Convidado(a) por" só aparece quando a pessoa foi convidada por alguém. O número é a contagem de fichas **daquele dia** (recomeça do 1 a cada dia, no fuso horário do projeto — confira em ⚙️ Configurações do projeto → Fuso horário que está como `(GMT-03:00) Horário de Brasília`).
 Se uma ficha for cadastrada e, por qualquer motivo, o envio do Telegram falhar (ex: internet instável), a ficha continua sendo salva normalmente na planilha — só a notificação que não chega.
 
 > A API de bots do Telegram é oficial e gratuita (mantida pelo próprio Telegram), então é bem mais estável do que os "gambiarras" não-oficiais que existem para WhatsApp — não deve dar os mesmos problemas de instabilidade ou incompatibilidade com contas Business que você teve antes. A única troca é que quem for receber o aviso precisa ter o Telegram instalado (é gratuito e funciona em qualquer celular).
