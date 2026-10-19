@@ -440,6 +440,27 @@ td.col-check {
   font-weight: 600;
 }
 .bulk-bar .btn { width: auto; flex: 0 0 auto; }
+.bulk-bar { flex-wrap: wrap; }
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.topbar-actions .btn { width: auto; }
+.perfil-badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary-dark);
+  background: var(--primary-lighter);
+  border: 1px solid var(--primary-light);
+  border-radius: 999px;
+  padding: 4px 12px;
+}
+.perfil-badge:empty { display: none; }
+
+/* Botões de exclusão só aparecem para o perfil Administrador */
+body:not(.perfil-administrador) .admin-only { display: none !important; }
 
 .empty-state {
   text-align: center;

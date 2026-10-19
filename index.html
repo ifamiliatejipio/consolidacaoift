@@ -221,9 +221,30 @@
 
           <div class="conditional" id="cond-culto-especial">
             <div class="field">
-              <label for="qual_culto_especial">Qual culto?</label>
-              <input type="text" id="qual_culto_especial" name="qual_culto_especial" placeholder="Ex: Culto de aniversário da igreja">
-              <div class="error-text">Informe qual foi o culto.</div>
+              <label>Qual culto?</label>
+              <div class="choice-group" data-radio-group="opcao_culto_especial">
+                <label class="choice">
+                  <input type="radio" name="opcao_culto_especial" value="Volta de ECD">
+                  <span>Volta de ECD</span>
+                </label>
+                <label class="choice">
+                  <input type="radio" name="opcao_culto_especial" value="Celebração de Redes">
+                  <span>Celebração de Redes</span>
+                </label>
+                <label class="choice">
+                  <input type="radio" name="opcao_culto_especial" value="Outros">
+                  <span>Outros</span>
+                </label>
+              </div>
+              <div class="error-text">Selecione qual foi o culto.</div>
+            </div>
+
+            <div class="conditional" id="cond-culto-especial-outros">
+              <div class="field">
+                <label for="qual_culto_especial">Qual?</label>
+                <input type="text" id="qual_culto_especial" name="qual_culto_especial" placeholder="Ex: Culto de aniversário da igreja">
+                <div class="error-text">Informe qual foi o culto.</div>
+              </div>
             </div>
           </div>
         </div>

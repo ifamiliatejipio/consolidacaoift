@@ -9,8 +9,9 @@
  * 2. Menu Extensões > Apps Script.
  * 3. Apague o conteúdo padrão e cole este arquivo inteiro.
  * 4. Rode a função "configurarSenha" uma vez (veja abaixo) para
- *    definir a senha de acesso do painel — ou configure direto em
- *    Configurações do projeto > Propriedades do script > ADMIN_PASSWORD.
+ *    definir as senhas de acesso do painel (Gestor e Administrador) — ou
+ *    configure direto em Configurações do projeto > Propriedades do script
+ *    > GESTOR_PASSWORD e ADMINISTRADOR_PASSWORD.
  * 5. Publique como Web App (Implantar > Nova implantação > App da Web):
  *      - Executar como: Eu (seu e-mail)
  *      - Quem pode acessar: Qualquer pessoa
@@ -123,13 +124,38 @@ function validarCondicionais_(body) {
   return null;
 }
 
+// Perfis de acesso ao painel:
+// - Gestor: pode fazer tudo (ver fichas, encaminhar à rede, gerar PDFs),
+//   MENOS excluir fichas.
+// - Administrador: pode fazer tudo, inclusive excluir fichas.
+const PERFIL_GESTOR = 'gestor';
+const PERFIL_ADMINISTRADOR = 'administrador';
+
+// Texto provisório da senha do Administrador — enquanto ele não for trocado,
+// configurarSenha NÃO grava a senha do Administrador (para ninguém conseguir
+// entrar com uma senha conhecida).
+const SENHA_ADMIN_PROVISORIA = 'TROQUE_AQUI_A_SENHA_DO_ADMINISTRADOR';
+
 /**
- * Rode esta função UMA VEZ manualmente (Executar > configurarSenha)
- * para definir a senha do painel administrativo. Troque 'MinhaSenhaForte123'
- * pela senha que a pessoa responsável pela consolidação vai usar.
+ * Rode esta função manualmente (Executar > configurarSenha) para definir
+ * as senhas do painel. Troque os textos abaixo pelas senhas desejadas.
+ * As duas senhas precisam ser DIFERENTES.
  */
 function configurarSenha() {
-  PropertiesService.getScriptProperties().setProperty('ADMIN_PASSWORD', 'Consolidacao@#2021');
+  const senhaGestor = 'Consolidacao@#2021';
+  const senhaAdministrador = SENHA_ADMIN_PROVISORIA; // TROQUE pela senha do Administrador
+
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty('GESTOR_PASSWORD', senhaGestor);
+
+  if (senhaAdministrador && senhaAdministrador !== SENHA_ADMIN_PROVISORIA) {
+    if (senhaAdministrador === senhaGestor) {
+      throw new Error('A senha do Administrador precisa ser diferente da senha do Gestor.');
+    }
+    props.setProperty('ADMINISTRADOR_PASSWORD', senhaAdministrador);
+  } else {
+    console.warn('Senha do Administrador não configurada: troque o texto em configurarSenha e rode de novo.');
+  }
 }
 
 // ---------------------------------------------------------------
@@ -140,12 +166,12 @@ function doGet(e) {
   const action = e.parameter.action;
 
   if (action === 'list') {
-    const senha = e.parameter.senha || '';
-    if (!checarSenha_(senha)) {
+    const perfil = perfilDaSenha_(e.parameter.senha || '');
+    if (!perfil) {
       return jsonOutput_({ status: 'error', message: 'Senha incorreta.' });
     }
     const data = lerFichas_();
-    return jsonOutput_({ status: 'ok', data: data });
+    return jsonOutput_({ status: 'ok', perfil: perfil, data: data });
   }
 
   return jsonOutput_({ status: 'error', message: 'Ação inválida.' });
@@ -166,15 +192,19 @@ function doPost(e) {
   }
 
   if (action === 'update_rede') {
-    if (!checarSenha_(body.senha || '')) {
+    if (!perfilDaSenha_(body.senha || '')) {
       return jsonOutput_({ status: 'error', message: 'Senha incorreta.' });
     }
     return atualizarRede_(body);
   }
 
   if (action === 'delete') {
-    if (!checarSenha_(body.senha || '')) {
+    const perfil = perfilDaSenha_(body.senha || '');
+    if (!perfil) {
       return jsonOutput_({ status: 'error', message: 'Senha incorreta.' });
+    }
+    if (perfil !== PERFIL_ADMINISTRADOR) {
+      return jsonOutput_({ status: 'error', message: 'Apenas o Administrador pode excluir fichas.' });
     }
     return excluirFicha_(body);
   }
@@ -369,10 +399,21 @@ function adicionarColunasFaltantes_(sheet) {
   sheet.getRange(1, header.length + 1, 1, faltando.length).setValues([faltando]);
 }
 
-function checarSenha_(senha) {
-  const senhaCorreta = PropertiesService.getScriptProperties().getProperty('ADMIN_PASSWORD');
-  if (!senhaCorreta) return false; // senha ainda não configurada = bloqueia acesso
-  return senha === senhaCorreta;
+/**
+ * Retorna o perfil ('administrador' ou 'gestor') correspondente à senha, ou
+ * null se a senha não confere. Senha ainda não configurada = bloqueia acesso.
+ */
+function perfilDaSenha_(senha) {
+  if (!senha) return null;
+  const props = PropertiesService.getScriptProperties();
+  const senhaAdministrador = props.getProperty('ADMINISTRADOR_PASSWORD');
+  // ADMIN_PASSWORD era o nome da senha única na versão anterior: ela continua
+  // valendo como senha do Gestor até configurarSenha ser rodada de novo.
+  const senhaGestor = props.getProperty('GESTOR_PASSWORD') || props.getProperty('ADMIN_PASSWORD');
+
+  if (senhaAdministrador && senha === senhaAdministrador) return PERFIL_ADMINISTRADOR;
+  if (senhaGestor && senha === senhaGestor) return PERFIL_GESTOR;
+  return null;
 }
 
 function jsonOutput_(obj) {
