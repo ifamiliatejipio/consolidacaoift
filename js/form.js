@@ -29,6 +29,33 @@
     telInput.value = v;
   });
 
+  // --- Primeira letra de cada palavra em maiúscula ---
+  // Vale para os campos de texto livre (nome, bairro, endereço...), menos os
+  // que não fazem sentido em maiúscula. Conectivos como "de", "da", "dos" e "e"
+  // ficam em minúscula no meio do texto (ex: "Maria da Silva", "Rua das Flores").
+  const CAMPOS_SEM_MAIUSCULA = ['instagram', 'numero'];
+  const CONECTIVOS = /(\s)(de|da|do|das|dos|e)(?=\s)/gi;
+
+  function capitalizarPalavras(texto) {
+    return texto
+      .replace(/(^|\s)(\S)/g, (m, espaco, letra) => espaco + letra.toLocaleUpperCase('pt-BR'))
+      .replace(CONECTIVOS, (m, espaco, palavra) => espaco + palavra.toLocaleLowerCase('pt-BR'));
+  }
+
+  form.querySelectorAll('input[type="text"]').forEach(input => {
+    if (CAMPOS_SEM_MAIUSCULA.includes(input.name)) return;
+    input.setAttribute('autocapitalize', 'words'); // teclado do celular já sugere maiúscula
+    input.addEventListener('input', () => {
+      const novo = capitalizarPalavras(input.value);
+      if (novo === input.value) return;
+      // O tamanho do texto não muda, então dá pra manter o cursor no mesmo lugar.
+      const inicio = input.selectionStart;
+      const fim = input.selectionEnd;
+      input.value = novo;
+      input.setSelectionRange(inicio, fim);
+    });
+  });
+
   // --- Campos condicionais ---
   function setupConditional(groupName, condId, triggerValue, innerInput) {
     const wrap = document.getElementById(condId);
