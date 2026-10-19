@@ -20,6 +20,8 @@
   const bulkCount = document.getElementById('bulk-count');
   const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
   const bulkClearBtn = document.getElementById('bulk-clear-btn');
+  const bulkPdfBtn = document.getElementById('bulk-pdf-btn');
+  const perfilBadge = document.getElementById('perfil-badge');
 
   const modalOverlay = document.getElementById('modal-overlay');
   const modalClose = document.getElementById('modal-close');
@@ -36,6 +38,7 @@
   let currentFichaId = null;
   let currentFicha = null;
   let senhaAtual = '';
+  let perfilAtual = '';
   let selectedIds = new Set();
 
   function showToast(msg, type) {
@@ -52,8 +55,23 @@
     return true;
   }
 
+  // --- Perfil de acesso ---
+  // Gestor: pode tudo, menos excluir fichas. Administrador: pode tudo.
+  // A regra vale de verdade no backend; aqui só escondemos os botões de exclusão.
+  function aplicarPerfil(perfil) {
+    perfilAtual = perfil || '';
+    document.body.classList.toggle('perfil-administrador', perfilAtual === 'administrador');
+    perfilBadge.textContent = perfilAtual === 'administrador' ? 'Administrador'
+      : perfilAtual === 'gestor' ? 'Gestor' : '';
+  }
+
+  function isAdministrador() {
+    return perfilAtual === 'administrador';
+  }
+
   // --- Sessão (mantém login apenas durante a aba aberta) ---
   senhaAtual = sessionStorage.getItem('consolidacao_senha') || '';
+  aplicarPerfil(sessionStorage.getItem('consolidacao_perfil') || '');
   if (senhaAtual) {
     loginScreen.style.display = 'none';
     painelScreen.style.display = 'block';
@@ -80,6 +98,8 @@
       if (result && result.status === 'ok') {
         senhaAtual = senha;
         sessionStorage.setItem('consolidacao_senha', senha);
+        sessionStorage.setItem('consolidacao_perfil', result.perfil || '');
+        aplicarPerfil(result.perfil);
         loginScreen.style.display = 'none';
         painelScreen.style.display = 'block';
         renderFichas(result.data || []);
@@ -99,7 +119,9 @@
 
   logoutBtn.addEventListener('click', () => {
     sessionStorage.removeItem('consolidacao_senha');
+    sessionStorage.removeItem('consolidacao_perfil');
     senhaAtual = '';
+    aplicarPerfil('');
     painelScreen.style.display = 'none';
     loginScreen.style.display = 'flex';
     senhaInput.value = '';
@@ -109,12 +131,14 @@
 
   async function carregarFichas() {
     if (!checkConfigured()) return;
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:24px; color:#6b5f5c;">Carregando...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:24px; color:#6b5f5c;">Carregando...</td></tr>';
     try {
       const url = `${API_URL}?action=list&senha=${encodeURIComponent(senhaAtual)}`;
       const resp = await fetch(url);
       const result = await resp.json();
       if (result && result.status === 'ok') {
+        sessionStorage.setItem('consolidacao_perfil', result.perfil || '');
+        aplicarPerfil(result.perfil);
         renderFichas(result.data || []);
       } else {
         showToast((result && result.message) || 'Erro ao carregar fichas.', 'error');
@@ -226,6 +250,7 @@
         <td class="col-check"><input type="checkbox" class="row-checkbox" data-id="${escapeHtml(f.id)}"></td>
         <td>${formatarData(f.timestamp)}</td>
         <td>${escapeHtml(f.nome_completo || '–')}</td>
+        <td>${escapeHtml(f.idade || '–')}</td>
         <td>${escapeHtml(f.telefone || '–')}</td>
         <td>${escapeHtml(f.bairro || '–')}</td>
         <td>${escapeHtml(decisaoResumo(f.decisao))}</td>
@@ -291,7 +316,7 @@
 
   bulkDeleteBtn.addEventListener('click', async () => {
     const ids = Array.from(selectedIds);
-    if (!ids.length) return;
+    if (!ids.length || !isAdministrador()) return;
 
     const confirmado = window.confirm(
       'Tem certeza que deseja excluir ' + ids.length + ' cadastro(s) selecionado(s)?\n\nEssa ação não pode ser desfeita.'
@@ -463,7 +488,7 @@
 
   // --- Excluir ficha ---
   modalDeleteBtn.addEventListener('click', async () => {
-    if (!currentFichaId) return;
+    if (!currentFichaId || !isAdministrador()) return;
 
     const nome = (currentFicha && currentFicha.nome_completo) || 'esta ficha';
     const confirmado = window.confirm(
@@ -521,10 +546,8 @@
     return `<div class="item${full ? ' full' : ''}"><div class="k">${escapeHtml(label)}</div><div class="v">${escapeHtml(value || '–')}</div></div>`;
   }
 
-  function gerarHtmlImpressao(f) {
+  function gerarCorpoFicha(f, logoUrl, geradoEm) {
     const { filhos, chegou, redeAnterior, endereco, culto } = construirDetalhes(f);
-    const logoUrl = new URL('assets/logo.png', window.location.href).href;
-    const geradoEm = formatarDataCurta(new Date().toISOString());
 
     const itens = [
       itemHtml('Telefone', f.telefone),
@@ -545,11 +568,39 @@
       itemHtml('Data de cadastro', formatarDataCurta(f.timestamp)),
     ].join('');
 
+    return `<section class="ficha">
+  <div class="header">
+    <div class="logo-box"><img src="${logoUrl}" alt="Logo"></div>
+    <div>
+      <h1>Ficha de Consolidação</h1>
+      <div class="meta">Documento gerado em ${geradoEm}</div>
+    </div>
+  </div>
+  <hr>
+  <div class="nome">${escapeHtml(f.nome_completo || 'Sem nome')}</div>
+  <div class="grid">${itens}</div>
+  <div class="rede-box">
+    <div class="k">Encaminhado(a) à rede</div>
+    <div class="v">${escapeHtml(f.encaminhado_rede ? f.encaminhado_rede + (f.rede_categoria ? ' — ' + f.rede_categoria : '') : 'Ainda não encaminhado(a)')}</div>
+  </div>
+  <div class="footer">Documento de uso interno — dados usados apenas para acompanhamento pastoral.</div>
+</section>`;
+  }
+
+  // Gera um único documento com uma ou mais fichas, cada uma em sua própria página.
+  function gerarHtmlImpressao(fichas) {
+    const logoUrl = new URL('assets/logo.png', window.location.href).href;
+    const geradoEm = formatarDataCurta(new Date().toISOString());
+    const titulo = fichas.length === 1
+      ? 'Ficha - ' + (fichas[0].nome_completo || '')
+      : 'Fichas de Consolidação (' + fichas.length + ')';
+    const corpo = fichas.map(f => gerarCorpoFicha(f, logoUrl, geradoEm)).join('');
+
     return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Ficha - ${escapeHtml(f.nome_completo || '')}</title>
+<title>${escapeHtml(titulo)}</title>
 <style>
   @page { size: A4; margin: 16mm; }
   * { box-sizing: border-box; }
@@ -569,24 +620,12 @@
   .rede-box .k { font-size:10px; text-transform:uppercase; letter-spacing:.03em; color:#8f221d; font-weight:700; margin-bottom:5px; }
   .rede-box .v { font-size:14px; }
   .footer { margin-top:22px; font-size:9px; color:#b7aba7; }
+  .ficha { break-inside: avoid; page-break-inside: avoid; }
+  .ficha + .ficha { break-before: page; page-break-before: always; }
 </style>
 </head>
 <body>
-  <div class="header">
-    <div class="logo-box"><img src="${logoUrl}" alt="Logo"></div>
-    <div>
-      <h1>Ficha de Consolidação</h1>
-      <div class="meta">Documento gerado em ${geradoEm}</div>
-    </div>
-  </div>
-  <hr>
-  <div class="nome">${escapeHtml(f.nome_completo || 'Sem nome')}</div>
-  <div class="grid">${itens}</div>
-  <div class="rede-box">
-    <div class="k">Encaminhado(a) à rede</div>
-    <div class="v">${escapeHtml(f.encaminhado_rede ? f.encaminhado_rede + (f.rede_categoria ? ' — ' + f.rede_categoria : '') : 'Ainda não encaminhado(a)')}</div>
-  </div>
-  <div class="footer">Documento de uso interno — dados usados apenas para acompanhamento pastoral.</div>
+  ${corpo}
   <script>
     window.onload = function () {
       setTimeout(function () { window.print(); }, 200);
@@ -597,16 +636,28 @@
 </html>`;
   }
 
-  modalPdfBtn.addEventListener('click', () => {
-    if (!currentFicha) return;
+  function abrirImpressaoFichas(fichas) {
     const janela = window.open('', '_blank', 'width=850,height=1000');
     if (!janela) {
       showToast('Não foi possível abrir a janela de impressão. Verifique o bloqueador de pop-ups.', 'error');
       return;
     }
     janela.document.open();
-    janela.document.write(gerarHtmlImpressao(currentFicha));
+    janela.document.write(gerarHtmlImpressao(fichas));
     janela.document.close();
+  }
+
+  modalPdfBtn.addEventListener('click', () => {
+    if (!currentFicha) return;
+    abrirImpressaoFichas([currentFicha]);
+  });
+
+  // Fichas individuais das selecionadas, todas juntas num único PDF
+  // (uma ficha por página), na mesma ordem em que aparecem na tabela.
+  bulkPdfBtn.addEventListener('click', () => {
+    const selecionadas = allFichas.filter(f => selectedIds.has(f.id));
+    if (!selecionadas.length) return;
+    abrirImpressaoFichas(selecionadas);
   });
 
   // --- Relatório em PDF (lista de fichas, com ou sem filtro aplicado) ---
@@ -634,6 +685,7 @@
       return `<tr>
         <td>${escapeHtml(formatarData(f.timestamp))}</td>
         <td>${escapeHtml(f.nome_completo || '–')}</td>
+        <td>${escapeHtml(f.idade || '–')}</td>
         <td>${escapeHtml(f.telefone || '–')}</td>
         <td>${escapeHtml(f.bairro || '–')}</td>
         <td>${escapeHtml(decisaoResumo(f.decisao))}</td>
@@ -644,7 +696,7 @@
 
     const corpo = dados.length
       ? `<table>
-          <thead><tr><th>Data</th><th>Nome</th><th>Telefone</th><th>Bairro</th><th>Decisão</th><th>Culto</th><th>Rede</th></tr></thead>
+          <thead><tr><th>Data</th><th>Nome</th><th>Idade</th><th>Telefone</th><th>Bairro</th><th>Decisão</th><th>Culto</th><th>Rede</th></tr></thead>
           <tbody>${linhas}</tbody>
         </table>`
       : `<p class="vazio">Nenhuma ficha encontrada com os filtros aplicados.</p>`;

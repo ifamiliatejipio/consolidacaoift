@@ -99,7 +99,7 @@ Esse campo aparece na ficha com 3 opções principais: **Noite da Unção**, **D
 
 - **Noite da Unção** → escolher o dia: Terça, Quarta ou Quinta.
 - **Domingo** → escolher o horário: 10h, 15h, 17h ou 19h.
-- **Culto especial** → uma caixa de texto livre para escrever qual foi o culto.
+- **Culto especial** → escolher entre **Volta de ECD**, **Celebração de Redes** ou **Outros** (em "Outros" aparece uma caixa de texto para escrever qual foi o culto).
 
 Essa informação aparece no painel na coluna "Culto" da tabela, no detalhe de cada ficha e no PDF exportado.
 
@@ -142,6 +142,34 @@ Ao clicar, o sistema pede uma confirmação antes de excluir (mostrando o nome d
 - Se cancelar, nada acontece e a ficha continua lá.
 
 > **Importante:** como essa função mexe no `Code.gs`, depois de colar o código novo você precisa publicar uma **nova versão** da implantação (Implantar > Gerenciar implantações > ✏️ editar > Versão: Nova versão > Implantar). Só salvar o arquivo no editor do Apps Script não é suficiente — sem publicar a nova versão, o botão de excluir vai aparecer no painel, mas vai dar erro de "Ação inválida" ao clicar.
+
+---
+
+## Perfis de acesso: Gestor e Administrador
+
+O painel tem dois perfis, cada um com sua própria senha:
+
+- **Gestor** — pode fazer tudo (ver fichas, encaminhar à rede, gerar relatório e PDFs), **menos excluir fichas**. Os botões de excluir nem aparecem para ele.
+- **Administrador** — pode fazer tudo, inclusive excluir fichas.
+
+O perfil é reconhecido pela senha digitada na tela de login, e aparece no topo do painel ao lado do botão "Sair". A senha que já existia passa a ser a do **Gestor**.
+
+### Como configurar a senha do Administrador
+
+1. Cole o `Code.gs` novo no Apps Script.
+2. Na função `configurarSenha`, troque `SENHA_ADMIN_PROVISORIA` (na linha `const senhaAdministrador = ...`) pela senha do Administrador, entre aspas — por exemplo `const senhaAdministrador = 'MinhaSenhaAdmin';`. Ela precisa ser diferente da senha do Gestor.
+3. Escolha a função `configurarSenha` e clique em **Executar** (▶).
+4. Publique uma **nova versão** da implantação (Implantar → Gerenciar implantações → ✏️ → Nova versão → Implantar).
+
+> Enquanto a senha do Administrador não for configurada, ninguém consegue excluir fichas — só o acesso de Gestor funciona.
+
+---
+
+## Fichas individuais em PDF (várias de uma vez)
+
+Na tabela do painel, marque as fichas desejadas (ou use a caixinha do cabeçalho para selecionar todas as que estão aparecendo). Na barra que aparece acima da tabela, clique em **"⬇ Gerar fichas individuais (PDF)"**: abre um único documento com todas as fichas selecionadas, **cada uma em uma página**, no mesmo formato do PDF individual. É só escolher "Salvar como PDF".
+
+A tabela do painel e o relatório em PDF também mostram a **idade** de cada pessoa.
 
 ---
 
@@ -204,4 +232,4 @@ Basta substituir o arquivo `assets/logo.png` por outra imagem com o mesmo nome (
 
 **O painel diz "Senha incorreta" mesmo com a senha certa** → confira se você rodou a função `configurarSenha` no Apps Script (Parte 1, passo 6) e se implantou uma nova versão depois de qualquer alteração no código.
 
-**Quero trocar a senha do painel** → edite a senha na função `configurarSenha` no Apps Script, rode a função de novo (▶ Executar) e não precisa reimplantar, pois isso não altera as rotas do site.
+**Quero trocar a senha do painel (Gestor ou Administrador)** → edite a senha na função `configurarSenha` no Apps Script, rode a função de novo (▶ Executar) e não precisa reimplantar, pois isso não altera as rotas do site.

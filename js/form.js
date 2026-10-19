@@ -50,6 +50,7 @@
   setupConditional('tem_filhos', 'cond-quantos-filhos', 'Sim', 'quantos_filhos');
   setupConditional('como_chegou', 'cond-quem-convidou', 'Foi convidado por alguém', 'quem_convidou');
   setupConditional('participou_rede', 'cond-qual-rede', 'Sim', 'qual_rede');
+  setupConditional('opcao_culto_especial', 'cond-culto-especial-outros', 'Outros', 'qual_culto_especial');
 
   // --- Qual culto (3 opções, cada uma com seu próprio bloco condicional) ---
   const cultoBlocks = {
@@ -68,6 +69,7 @@
           bloco.querySelectorAll('input[type="radio"]').forEach(radio => { radio.checked = false; });
           bloco.querySelectorAll('input[type="text"]').forEach(text => { text.value = ''; });
           bloco.querySelectorAll('.field.invalid').forEach(f => f.classList.remove('invalid'));
+          bloco.querySelectorAll('.conditional.show').forEach(c => c.classList.remove('show'));
         }
       });
     });
@@ -143,10 +145,17 @@
         if (wrap) wrap.classList.toggle('invalid', !checked);
         if (!checked) valid = false;
       } else if (cultoSelecionado.value === 'Culto especial') {
-        const especialInput = document.getElementById('qual_culto_especial');
-        const bad = !especialInput.value.trim();
-        markInvalid(especialInput, bad);
-        if (bad) valid = false;
+        const radios = form.querySelectorAll('input[name="opcao_culto_especial"]');
+        const opcao = Array.from(radios).find(r => r.checked);
+        const wrap = radios[0] ? radios[0].closest('.field') : null;
+        if (wrap) wrap.classList.toggle('invalid', !opcao);
+        if (!opcao) valid = false;
+        if (opcao && opcao.value === 'Outros') {
+          const especialInput = document.getElementById('qual_culto_especial');
+          const bad = !especialInput.value.trim();
+          markInvalid(especialInput, bad);
+          if (bad) valid = false;
+        }
       }
     }
 
@@ -164,6 +173,12 @@
     const fd = new FormData(form);
     const data = {};
     fd.forEach((value, key) => { data[key] = value; });
+    // Culto especial: a opção escolhida (ou o texto digitado em "Outros")
+    // vai para a coluna qual_culto_especial da planilha.
+    if (data.opcao_culto_especial && data.opcao_culto_especial !== 'Outros') {
+      data.qual_culto_especial = data.opcao_culto_especial;
+    }
+    delete data.opcao_culto_especial;
     return data;
   }
 

@@ -32,7 +32,10 @@
       <img src="assets/logo.png" alt="Logo">
       <h1>Painel de Consolidação</h1>
     </div>
-    <button class="btn btn-secondary" id="logout-btn">Sair</button>
+    <div class="topbar-actions">
+      <span class="perfil-badge" id="perfil-badge"></span>
+      <button class="btn btn-secondary" id="logout-btn">Sair</button>
+    </div>
   </div>
 
   <div class="stats-row" id="stats-row">
@@ -69,7 +72,8 @@
 
   <div class="bulk-bar" id="bulk-bar" style="display:none">
     <span id="bulk-count">0 selecionada(s)</span>
-    <button class="btn btn-danger btn-sm" id="bulk-delete-btn">🗑 Excluir selecionadas</button>
+    <button class="btn btn-primary btn-sm" id="bulk-pdf-btn">⬇ Gerar fichas individuais (PDF)</button>
+    <button class="btn btn-danger btn-sm admin-only" id="bulk-delete-btn">🗑 Excluir selecionadas</button>
     <button class="btn btn-secondary btn-sm" id="bulk-clear-btn">Cancelar seleção</button>
   </div>
 
@@ -81,6 +85,7 @@
             <th class="col-check"><input type="checkbox" id="select-all-checkbox"></th>
             <th>Data</th>
             <th>Nome</th>
+            <th>Idade</th>
             <th>Telefone</th>
             <th>Bairro</th>
             <th>Decisão</th>
@@ -102,7 +107,7 @@
       <h2 id="modal-nome">Detalhes da ficha</h2>
       <div class="modal-header-actions">
         <button class="btn btn-secondary btn-sm" id="modal-pdf-btn">⬇ Exportar PDF</button>
-        <button class="btn btn-danger btn-sm" id="modal-delete-btn">🗑 Excluir</button>
+        <button class="btn btn-danger btn-sm admin-only" id="modal-delete-btn">🗑 Excluir</button>
         <button class="modal-close" id="modal-close">&times;</button>
       </div>
     </div>
