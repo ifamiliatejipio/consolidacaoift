@@ -361,6 +361,12 @@ input::placeholder { color: #b7aba7; }
 .toolbar input, .toolbar select {
   flex: 1 1 180px;
 }
+.toolbar .filter-dia {
+  flex: 1 1 290px;
+  font-weight: 600;
+  border-color: var(--primary-light);
+  color: var(--primary-dark);
+}
 .toolbar .btn {
   width: auto;
   flex: 0 0 auto;

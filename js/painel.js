@@ -11,6 +11,7 @@
   const filterRede = document.getElementById('filter-rede');
   const filterCategoria = document.getElementById('filter-categoria');
   const filterMes = document.getElementById('filter-mes');
+  const filterDia = document.getElementById('filter-dia');
   const reportBtn = document.getElementById('report-btn');
   const tbody = document.getElementById('fichas-tbody');
   const emptyState = document.getElementById('empty-state');
@@ -158,7 +159,48 @@
     selectedIds.clear();
     atualizarStats(allFichas);
     popularFiltroMes(allFichas);
+    popularFiltroDia(allFichas);
     aplicarFiltros();
+  }
+
+  // --- Filtro por dia de cadastro ---
+  // O painel abre mostrando só as fichas de hoje ("Hoje" é calculado na hora,
+  // então se o dia virar, a tela passa a mostrar só as do novo dia). A lista
+  // traz apenas as datas que têm ficha cadastrada, e "Todas as datas" mostra tudo.
+  function diaChave(iso) {
+    if (!iso) return null;
+    const d = iso instanceof Date ? iso : new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function diaLabel(chave) {
+    const [ano, mes, dia] = chave.split('-');
+    return dia + '/' + mes + '/' + ano;
+  }
+
+  function popularFiltroDia(data) {
+    const contagem = {};
+    data.forEach(f => {
+      const c = diaChave(f.timestamp);
+      if (c) contagem[c] = (contagem[c] || 0) + 1;
+    });
+    const hoje = diaChave(new Date());
+    // A data de hoje já é coberta pela opção "Hoje", então não repete na lista.
+    const chaves = Object.keys(contagem).filter(c => c !== hoje).sort((a, b) => b.localeCompare(a));
+
+    const valorAtual = filterDia.value;
+    const qtdHoje = contagem[hoje] || 0;
+    filterDia.innerHTML =
+      `<option value="hoje">Hoje (${diaLabel(hoje)}) — ${qtdHoje} ficha(s)</option>` +
+      '<option value="">Todas as datas</option>' +
+      chaves.map(c => `<option value="${c}">${diaLabel(c)} — ${contagem[c]} ficha(s)</option>`).join('');
+
+    if (valorAtual === '' || valorAtual === 'hoje' || chaves.includes(valorAtual)) {
+      filterDia.value = valorAtual;
+    } else {
+      filterDia.value = 'hoje';
+    }
   }
 
   function mesChave(iso) {
@@ -201,8 +243,10 @@
     const rede = filterRede.value;
     const categoria = filterCategoria.value;
     const mes = filterMes.value;
+    const dia = filterDia.value === 'hoje' ? diaChave(new Date()) : filterDia.value;
 
     let filtrado = allFichas.filter(f => {
+      if (dia && diaChave(f.timestamp) !== dia) return false;
       if (decisao && f.decisao !== decisao) return false;
       if (mes && mesChave(f.timestamp) !== mes) return false;
       const temRede = !!(f.encaminhado_rede && f.encaminhado_rede.trim());
@@ -278,7 +322,15 @@
   filterDecisao.addEventListener('change', aplicarFiltros);
   filterRede.addEventListener('change', aplicarFiltros);
   filterCategoria.addEventListener('change', aplicarFiltros);
-  filterMes.addEventListener('change', aplicarFiltros);
+  // Dia e mês não se combinam: escolher um volta o outro para "todos".
+  filterMes.addEventListener('change', () => {
+    if (filterMes.value) filterDia.value = '';
+    aplicarFiltros();
+  });
+  filterDia.addEventListener('change', () => {
+    if (filterDia.value) filterMes.value = '';
+    aplicarFiltros();
+  });
 
   function formatarData(iso) {
     if (!iso) return '–';
@@ -295,6 +347,9 @@
   function renderTable(data) {
     tbody.innerHTML = '';
     if (!data.length) {
+      emptyState.textContent = filterDia.value === 'hoje'
+        ? 'Nenhuma ficha cadastrada hoje. Escolha outra data ou "Todas as datas" no filtro de dia.'
+        : 'Nenhuma ficha encontrada.';
       emptyState.style.display = 'block';
       atualizarBarraSelecao();
       return;
@@ -414,6 +469,7 @@
 
     atualizarStats(allFichas);
     popularFiltroMes(allFichas);
+    popularFiltroDia(allFichas);
     aplicarFiltros();
 
     bulkDeleteBtn.disabled = false;
@@ -574,6 +630,7 @@
         allFichas = allFichas.filter(x => x.id !== idParaExcluir);
         atualizarStats(allFichas);
         popularFiltroMes(allFichas);
+        popularFiltroDia(allFichas);
         aplicarFiltros();
         fecharModal();
       } else {
@@ -726,6 +783,8 @@
 
   function montarResumoFiltrosAtivos() {
     const partes = [];
+    if (filterDia.value === 'hoje') partes.push('Dia: ' + diaLabel(diaChave(new Date())));
+    else if (filterDia.value) partes.push('Dia: ' + diaLabel(filterDia.value));
     if (filterMes.value) partes.push('Mês: ' + filterMes.options[filterMes.selectedIndex].textContent);
     if (filterDecisao.value) partes.push('Decisão: ' + filterDecisao.options[filterDecisao.selectedIndex].textContent);
     if (filterRede.value) partes.push('Rede: ' + filterRede.options[filterRede.selectedIndex].textContent);
