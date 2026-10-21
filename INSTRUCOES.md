@@ -183,7 +183,7 @@ Horários configurados (cada culto deixa a ficha aberta por **4 horas** a partir
 
 **Culto especial:** no painel, o **Administrador** vê um quadro com o status das fichas e o botão **"🔓 Liberar fichas por 4 horas"**. Depois de liberar, aparece o botão **"🔒 Encerrar liberação"** para fechar antes do prazo. O Gestor vê o status, mas não os botões.
 
-**Mudar os horários pelo painel:** o Administrador clica em **"⚙️ Horários dos cultos"** no quadro de status. Lá dá para adicionar ou remover cultos, mudar nome, horário e dias, mudar quantas horas a ficha fica aberta em cada culto e ligar/desligar o bloqueio. Ao salvar, vale na hora (não precisa publicar nova versão), e o texto dos horários mostrado na ficha é atualizado sozinho. Os horários ficam guardados na propriedade do script `HORARIOS_CONFIG`; os valores no topo do `Code.gs` são só o padrão inicial.
+**Mudar os horários pelo painel:** o Administrador clica em **"⚙️ Horários dos cultos"** no quadro de status. Lá dá para adicionar ou remover cultos, mudar nome, dias, **horário de início e horário de fim** de cada culto, e ligar/desligar o bloqueio. Se o horário de fim ficar vazio, a ficha fica aberta pelas **horas padrão** (campo no topo da tela). Um fim menor que o início vale como depois da meia-noite (ex: 22h às 2h). Ao salvar, vale na hora (não precisa publicar nova versão), e o texto dos horários mostrado na ficha é atualizado sozinho. Os horários ficam guardados na propriedade do script `HORARIOS_CONFIG`; os valores no topo do `Code.gs` são só o padrão inicial.
 
 O horário usado é o fuso do projeto (⚙️ Configurações do projeto → Fuso horário → Horário de Brasília).
 

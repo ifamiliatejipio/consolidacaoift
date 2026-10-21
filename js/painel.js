@@ -239,14 +239,19 @@
     item.innerHTML = `
       <div class="culto-linha">
         <input type="text" class="culto-nome" placeholder="Nome do culto (ex: Noite da Unção)">
-        <input type="time" class="culto-inicio" required>
         <button type="button" class="culto-remover" title="Remover culto">&times;</button>
+      </div>
+      <div class="culto-horas">
+        <label>Início <input type="time" class="culto-inicio" required></label>
+        <label>Fim <input type="time" class="culto-fim"></label>
+        <span class="hint-fim">fim vazio = usa as horas padrão</span>
       </div>
       <div class="culto-dias">
         ${NOMES_DIAS.map((n, i) => `<label><input type="checkbox" value="${i + 1}">${n}</label>`).join('')}
       </div>`;
     item.querySelector('.culto-nome').value = culto.nome || '';
     item.querySelector('.culto-inicio').value = culto.inicio || '19:00';
+    item.querySelector('.culto-fim').value = culto.fim || '';
     item.querySelectorAll('.culto-dias input').forEach(cb => {
       cb.checked = (culto.dias || []).includes(Number(cb.value));
     });
@@ -275,11 +280,14 @@
     const cultos = Array.from(horariosLista.querySelectorAll('.culto-item')).map(item => ({
       nome: item.querySelector('.culto-nome').value.trim(),
       inicio: item.querySelector('.culto-inicio').value,
+      fim: item.querySelector('.culto-fim').value,
       dias: Array.from(item.querySelectorAll('.culto-dias input:checked')).map(cb => Number(cb.value))
     }));
     const semDia = cultos.find(c => !c.dias.length);
     if (semDia) { showToast('Escolha pelo menos um dia para o culto "' + (semDia.nome || 'sem nome') + '".', 'error'); return; }
-    if (cultos.some(c => !c.inicio)) { showToast('Preencha o horário de todos os cultos.', 'error'); return; }
+    if (cultos.some(c => !c.inicio)) { showToast('Preencha o horário de início de todos os cultos.', 'error'); return; }
+    const fimIgual = cultos.find(c => c.fim && c.fim === c.inicio);
+    if (fimIgual) { showToast('O horário final precisa ser diferente do início no culto "' + (fimIgual.nome || 'sem nome') + '".', 'error'); return; }
 
     horariosSalvar.disabled = true;
     horariosSalvar.innerHTML = '<span class="spinner"></span> Salvando...';

@@ -73,9 +73,10 @@ const TELEGRAM_CHAT_IDS = [
 // =================================================================
 const BLOQUEIO_HORARIO_ATIVADO = true; // padrão: false = ficha aberta o tempo todo
 
-const HORAS_POR_CULTO = 4; // padrão: quanto tempo a ficha fica aberta a partir do início do culto
+const HORAS_POR_CULTO = 4; // padrão: quanto tempo a ficha fica aberta nos cultos sem horário final
 
 // Dias: 1 = segunda, 2 = terça, 3 = quarta, 4 = quinta, 5 = sexta, 6 = sábado, 7 = domingo
+// "fim" é opcional (ex: fim: '22:00'); sem ele, a ficha fica aberta por HORAS_POR_CULTO.
 const HORARIOS_CULTOS = [
   { nome: 'Noite da Unção', dias: [2, 3, 4], inicio: '19:30' },
   { nome: 'Domingo 10h', dias: [7], inicio: '10:00' },
@@ -300,7 +301,7 @@ function configHorarios_() {
   return {
     bloqueioAtivado: BLOQUEIO_HORARIO_ATIVADO,
     horasPorCulto: HORAS_POR_CULTO,
-    cultos: HORARIOS_CULTOS.map(c => ({ nome: c.nome, dias: c.dias.slice(), inicio: c.inicio }))
+    cultos: HORARIOS_CULTOS.map(c => ({ nome: c.nome, dias: c.dias.slice(), inicio: c.inicio, fim: c.fim || '' }))
   };
 }
 
@@ -319,11 +320,41 @@ function validarConfigHorarios_(config) {
       ? c.dias.map(Number).filter(d => d >= 1 && d <= 7).filter((d, j, arr) => arr.indexOf(d) === j).sort()
       : [];
     if (!dias.length) return { erro: 'Escolha pelo menos um dia para o culto "' + nome + '".' };
-    const m = /^(\d{1,2}):(\d{2})$/.exec(String(c.inicio || '').trim());
-    if (!m || Number(m[1]) > 23 || Number(m[2]) > 59) return { erro: 'Horário inválido no culto "' + nome + '".' };
-    cultos.push({ nome: nome, dias: dias, inicio: ('0' + Number(m[1])).slice(-2) + ':' + m[2] });
+    const inicio = normalizarHora_(c.inicio);
+    if (!inicio) return { erro: 'Horário de início inválido no culto "' + nome + '".' };
+    let fim = '';
+    if (c.fim && String(c.fim).trim()) {
+      fim = normalizarHora_(c.fim);
+      if (!fim) return { erro: 'Horário final inválido no culto "' + nome + '".' };
+      if (fim === inicio) return { erro: 'O horário final precisa ser diferente do início no culto "' + nome + '".' };
+    }
+    cultos.push({ nome: nome, dias: dias, inicio: inicio, fim: fim });
   }
   return { config: { bloqueioAtivado: config.bloqueioAtivado !== false, horasPorCulto: horas, cultos: cultos } };
+}
+
+// "9:5" / "09:05" -> "09:05"; inválido -> null
+function normalizarHora_(valor) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(valor || '').trim());
+  if (!m || Number(m[1]) > 23 || Number(m[2]) > 59) return null;
+  return ('0' + Number(m[1])).slice(-2) + ':' + m[2];
+}
+
+/**
+ * Janela da ficha de um culto, em minutos desde a meia-noite do dia do culto:
+ * do início até o horário final (se houver) ou até início + horas padrão.
+ * Um fim menor que o início significa que passa da meia-noite (ex: 22h às 1h).
+ */
+function janelaCulto_(c, horasPorCulto) {
+  const ini = c.inicio.split(':');
+  const inicio = Number(ini[0]) * 60 + Number(ini[1]);
+  if (c.fim) {
+    const f = c.fim.split(':');
+    let fim = Number(f[0]) * 60 + Number(f[1]);
+    if (fim <= inicio) fim += 1440;
+    return [inicio, fim];
+  }
+  return [inicio, inicio + horasPorCulto * 60];
 }
 
 /**
@@ -332,7 +363,6 @@ function validarConfigHorarios_(config) {
  */
 function textoHorarios_(config) {
   const NOMES = ['', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
-  const duracao = config.horasPorCulto * 60;
   const hora = min => {
     const t = ((min % 1440) + 1440) % 1440;
     const h = Math.floor(t / 60), m = Math.round(t % 60);
@@ -344,7 +374,7 @@ function textoHorarios_(config) {
   for (let dia = 1; dia <= 7; dia++) {
     const janelas = config.cultos
       .filter(c => c.dias.indexOf(dia) !== -1)
-      .map(c => { const p = c.inicio.split(':'); const ini = Number(p[0]) * 60 + Number(p[1]); return [ini, ini + duracao]; })
+      .map(c => janelaCulto_(c, config.horasPorCulto))
       .sort((a, b) => a[0] - b[0]);
     const juntas = [];
     janelas.forEach(j => {
@@ -396,13 +426,12 @@ function cultoEmAndamento_(data, config) {
   const diaHoje = Number(Utilities.formatDate(data, fuso, 'u')); // 1 = segunda ... 7 = domingo
   const diaOntem = diaHoje === 1 ? 7 : diaHoje - 1;
   const minutosAgora = Number(Utilities.formatDate(data, fuso, 'H')) * 60 + Number(Utilities.formatDate(data, fuso, 'm'));
-  const duracao = config.horasPorCulto * 60;
 
   for (let i = 0; i < config.cultos.length; i++) {
     const c = config.cultos[i];
-    const partes = c.inicio.split(':');
-    const inicio = Number(partes[0]) * 60 + Number(partes[1] || 0);
-    const fim = inicio + duracao;
+    const janela = janelaCulto_(c, config.horasPorCulto);
+    const inicio = janela[0];
+    const fim = janela[1];
     if (c.dias.indexOf(diaHoje) !== -1 && minutosAgora >= inicio && minutosAgora < fim) return c;
     // Culto que começou ontem e passa da meia-noite.
     if (fim > 1440 && c.dias.indexOf(diaOntem) !== -1 && minutosAgora < fim - 1440) return c;

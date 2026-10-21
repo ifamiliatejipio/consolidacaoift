@@ -497,7 +497,22 @@ td.col-check {
 }
 .culto-linha { display: flex; gap: 8px; align-items: center; }
 .culto-linha input[type="text"] { flex: 1 1 auto; padding: 9px 12px; font-size: 0.92rem; }
-.culto-linha input[type="time"] {
+.culto-horas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-top: 10px;
+}
+.culto-horas label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.82rem;
+}
+.culto-horas .hint-fim { font-size: 0.75rem; color: var(--ink-soft); }
+.culto-item input[type="time"] {
   flex: 0 0 auto;
   padding: 8px 10px;
   border: 1.5px solid var(--border);
