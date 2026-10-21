@@ -6,6 +6,9 @@
   const errorBanner = document.getElementById('form-error-banner');
   const newFormBtn = document.getElementById('new-form-btn');
   const toast = document.getElementById('toast');
+  const closedScreen = document.getElementById('closed-screen');
+  const closedHorarios = document.getElementById('closed-horarios');
+  const closedRetryBtn = document.getElementById('closed-retry-btn');
 
   function showToast(msg, type) {
     toast.textContent = msg;
@@ -221,6 +224,52 @@
     return data;
   }
 
+  // --- Horário das fichas ---
+  // O servidor decide se a ficha está aberta (horário dos cultos ou liberação
+  // do Administrador). Fora disso, a página mostra o aviso de fichas fechadas.
+  // Se a consulta falhar, o formulário continua visível — o servidor ainda
+  // recusa envios fora do horário.
+  let timerVerificacao = null;
+
+  function mostrarFechado(fichas) {
+    closedHorarios.textContent = (fichas && fichas.horarios) || '';
+    form.style.display = 'none';
+    successScreen.classList.remove('show');
+    errorBanner.classList.remove('show');
+    closedScreen.classList.add('show');
+    // Enquanto estiver fechada, confere de novo a cada minuto (abre sozinha no horário).
+    if (!timerVerificacao) timerVerificacao = setInterval(verificarHorario, 60000);
+  }
+
+  function mostrarAberto() {
+    if (!closedScreen.classList.contains('show')) return;
+    closedScreen.classList.remove('show');
+    form.style.display = '';
+    clearInterval(timerVerificacao);
+    timerVerificacao = null;
+  }
+
+  async function verificarHorario() {
+    if (!API_URL || API_URL.indexOf('COLE_AQUI') !== -1) return;
+    try {
+      const resp = await fetch(`${API_URL}?action=status`);
+      const result = await resp.json();
+      if (!result || result.status !== 'ok' || !result.fichas) return;
+      if (result.fichas.aberto) mostrarAberto();
+      else mostrarFechado(result.fichas);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  closedRetryBtn.addEventListener('click', async () => {
+    closedRetryBtn.disabled = true;
+    await verificarHorario();
+    closedRetryBtn.disabled = false;
+  });
+
+  verificarHorario();
+
   form.addEventListener('submit', async function (e) {
     e.preventDefault();
     errorBanner.classList.remove('show');
@@ -254,6 +303,8 @@
       if (result && result.status === 'ok') {
         formCard.querySelector('form').style.display = 'none';
         successScreen.classList.add('show');
+      } else if (result && result.code === 'fichas_fechadas') {
+        mostrarFechado(result.fichas);
       } else {
         throw new Error((result && result.message) || 'Erro desconhecido');
       }

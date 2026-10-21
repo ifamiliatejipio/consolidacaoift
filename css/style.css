@@ -291,6 +291,11 @@ input::placeholder { color: #b7aba7; }
   color: var(--ink-soft);
   margin: 0 0 24px;
 }
+.closed-screen .icon {
+  background: var(--primary-lighter);
+  color: var(--primary-dark);
+}
+.closed-screen strong { color: var(--primary-dark); }
 
 .footer-note {
   text-align: center;
@@ -460,6 +465,25 @@ td.col-check {
 }
 .bulk-bar .btn { width: auto; flex: 0 0 auto; }
 .bulk-bar { flex-wrap: wrap; }
+
+.fichas-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.fichas-status.aberto { border-color: var(--success); background: var(--success-bg); color: var(--success); }
+.fichas-status.fechado { border-color: var(--primary-light); background: var(--primary-lighter); color: var(--primary-dark); }
+.fichas-status-acoes { display: flex; gap: 8px; flex-wrap: wrap; }
+.fichas-status-acoes .btn { width: auto; }
 
 .topbar-actions {
   display: flex;

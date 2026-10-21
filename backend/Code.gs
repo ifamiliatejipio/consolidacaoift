@@ -59,6 +59,30 @@ const TELEGRAM_CHAT_IDS = [
   '-1004387820436', // grupo de envio no Telegram
 ];
 
+// =================================================================
+// HORÁRIO DAS FICHAS
+// -----------------------------------------------------------------
+// A ficha só aceita envios durante os cultos (no fuso horário do projeto —
+// confira em Configurações do projeto > Fuso horário). Fora disso, a página
+// mostra que as fichas estão fechadas. Para cultos especiais em outros dias/
+// horários, o Administrador libera as fichas pelo painel.
+// =================================================================
+const BLOQUEIO_HORARIO_ATIVADO = true; // false = ficha aberta o tempo todo
+
+const HORAS_POR_CULTO = 4; // quanto tempo a ficha fica aberta a partir do início do culto
+
+// Dias: 1 = segunda, 2 = terça, 3 = quarta, 4 = quinta, 5 = sexta, 6 = sábado, 7 = domingo
+const HORARIOS_CULTOS = [
+  { nome: 'Noite da Unção', dias: [2, 3, 4], inicio: '19:30' },
+  { nome: 'Domingo 10h', dias: [7], inicio: '10:00' },
+  { nome: 'Domingo 15h', dias: [7], inicio: '15:00' },
+  { nome: 'Domingo 17h', dias: [7], inicio: '17:00' },
+  { nome: 'Domingo 19h', dias: [7], inicio: '19:00' },
+];
+
+// Texto mostrado na ficha quando ela está fechada (atualize se mudar os horários acima).
+const TEXTO_HORARIOS_FICHA = 'Terça, quarta e quinta: 19h30 às 23h30 · Domingo: 10h às 14h e 15h às 23h';
+
 // Ordem das colunas na planilha — não mude a ordem sem atualizar o front-end.
 const COLUMNS = [
   'id',
@@ -172,7 +196,12 @@ function doGet(e) {
       return jsonOutput_({ status: 'error', message: 'Senha incorreta.' });
     }
     const data = lerFichas_();
-    return jsonOutput_({ status: 'ok', perfil: perfil, data: data });
+    return jsonOutput_({ status: 'ok', perfil: perfil, data: data, fichas: statusFichas_() });
+  }
+
+  // Público: a ficha consulta se está aberta antes de mostrar o formulário.
+  if (action === 'status') {
+    return jsonOutput_({ status: 'ok', fichas: statusFichas_() });
   }
 
   return jsonOutput_({ status: 'error', message: 'Ação inválida.' });
@@ -210,6 +239,25 @@ function doPost(e) {
     return excluirFicha_(body);
   }
 
+  // Liberar / encerrar a liberação das fichas fora do horário (culto especial).
+  if (action === 'liberar_fichas' || action === 'encerrar_liberacao') {
+    const perfil = perfilDaSenha_(body.senha || '');
+    if (!perfil) {
+      return jsonOutput_({ status: 'error', message: 'Senha incorreta.' });
+    }
+    if (perfil !== PERFIL_ADMINISTRADOR) {
+      return jsonOutput_({ status: 'error', message: 'Apenas o Administrador pode liberar as fichas.' });
+    }
+    const props = PropertiesService.getScriptProperties();
+    if (action === 'liberar_fichas') {
+      const horas = Math.min(Math.max(Number(body.horas) || HORAS_POR_CULTO, 1), 12);
+      props.setProperty('FICHAS_LIBERADAS_ATE', String(Date.now() + horas * 3600 * 1000));
+    } else {
+      props.deleteProperty('FICHAS_LIBERADAS_ATE');
+    }
+    return jsonOutput_({ status: 'ok', fichas: statusFichas_() });
+  }
+
   return jsonOutput_({ status: 'error', message: 'Ação inválida.' });
 }
 
@@ -217,7 +265,57 @@ function doPost(e) {
 // Lógica
 // ---------------------------------------------------------------
 
+/**
+ * Diz se a ficha está aberta agora: por estar no horário de algum culto
+ * (HORARIOS_CULTOS) ou por uma liberação manual do Administrador.
+ */
+function statusFichas_() {
+  const agora = new Date();
+  const liberadoAteMs = Number(PropertiesService.getScriptProperties().getProperty('FICHAS_LIBERADAS_ATE')) || 0;
+  const liberado = liberadoAteMs > agora.getTime();
+  const base = {
+    horarios: TEXTO_HORARIOS_FICHA,
+    liberadoAte: liberado ? new Date(liberadoAteMs).toISOString() : null
+  };
+
+  if (!BLOQUEIO_HORARIO_ATIVADO) return Object.assign(base, { aberto: true, motivo: 'sem_bloqueio' });
+  if (liberado) return Object.assign(base, { aberto: true, motivo: 'liberacao' });
+
+  const culto = cultoEmAndamento_(agora);
+  if (culto) return Object.assign(base, { aberto: true, motivo: 'culto', culto: culto.nome });
+  return Object.assign(base, { aberto: false, motivo: 'fechado' });
+}
+
+function cultoEmAndamento_(data) {
+  const fuso = Session.getScriptTimeZone();
+  const diaHoje = Number(Utilities.formatDate(data, fuso, 'u')); // 1 = segunda ... 7 = domingo
+  const diaOntem = diaHoje === 1 ? 7 : diaHoje - 1;
+  const minutosAgora = Number(Utilities.formatDate(data, fuso, 'H')) * 60 + Number(Utilities.formatDate(data, fuso, 'm'));
+  const duracao = HORAS_POR_CULTO * 60;
+
+  for (let i = 0; i < HORARIOS_CULTOS.length; i++) {
+    const c = HORARIOS_CULTOS[i];
+    const partes = c.inicio.split(':');
+    const inicio = Number(partes[0]) * 60 + Number(partes[1] || 0);
+    const fim = inicio + duracao;
+    if (c.dias.indexOf(diaHoje) !== -1 && minutosAgora >= inicio && minutosAgora < fim) return c;
+    // Culto que começou ontem e passa da meia-noite.
+    if (fim > 1440 && c.dias.indexOf(diaOntem) !== -1 && minutosAgora < fim - 1440) return c;
+  }
+  return null;
+}
+
 function criarFicha_(body) {
+  const statusFichas = statusFichas_();
+  if (!statusFichas.aberto) {
+    return jsonOutput_({
+      status: 'error',
+      code: 'fichas_fechadas',
+      message: 'As fichas estão fechadas fora do horário dos cultos.',
+      fichas: statusFichas
+    });
+  }
+
   for (let i = 0; i < REQUIRED_FIELDS.length; i++) {
     const campo = REQUIRED_FIELDS[i];
     if (!body[campo] || String(body[campo]).trim() === '') {

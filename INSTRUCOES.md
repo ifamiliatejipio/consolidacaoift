@@ -173,6 +173,20 @@ A tabela do painel e o relatório em PDF também mostram a **idade** de cada pes
 
 ---
 
+## Horário das fichas (bloqueio fora dos cultos)
+
+A ficha só aceita envios durante os cultos. Fora do horário, a página mostra **"Fichas fechadas no momento"** com os horários, e confere sozinha a cada minuto. Quando o horário chega, o formulário aparece.
+
+Horários configurados (cada culto deixa a ficha aberta por **4 horas** a partir do início):
+- **Terça, quarta e quinta** (Noite da Unção, 19h30): 19h30 às 23h30
+- **Domingo** (10h, 15h, 17h e 19h): 10h às 14h e 15h às 23h
+
+**Culto especial:** no painel, o **Administrador** vê um quadro com o status das fichas e o botão **"🔓 Liberar fichas por 4 horas"**. Depois de liberar, aparece o botão **"🔒 Encerrar liberação"** para fechar antes do prazo. O Gestor vê o status, mas não os botões.
+
+Para mudar os horários, edite `HORARIOS_CULTOS`, `HORAS_POR_CULTO` e `TEXTO_HORARIOS_FICHA` no topo do `Code.gs`. Para desligar o bloqueio, troque `BLOQUEIO_HORARIO_ATIVADO` para `false`. Depois publique uma nova versão da implantação. O horário usado é o fuso do projeto (⚙️ Configurações do projeto → Fuso horário → Horário de Brasília).
+
+---
+
 ## Notificação automática no Telegram (opcional)
 
 O sistema pode avisar no Telegram assim que uma ficha é enviada, usando a **API oficial de bots do Telegram** — gratuita, estável, e sem os problemas de confiabilidade dos serviços não-oficiais de WhatsApp (não funciona nem foi projetada para WhatsApp Business, pois é outro aplicativo).

@@ -23,6 +23,10 @@
   const bulkClearBtn = document.getElementById('bulk-clear-btn');
   const bulkPdfBtn = document.getElementById('bulk-pdf-btn');
   const perfilBadge = document.getElementById('perfil-badge');
+  const fichasStatusBox = document.getElementById('fichas-status');
+  const fichasStatusTexto = document.getElementById('fichas-status-texto');
+  const liberarFichasBtn = document.getElementById('liberar-fichas-btn');
+  const encerrarLiberacaoBtn = document.getElementById('encerrar-liberacao-btn');
 
   const modalOverlay = document.getElementById('modal-overlay');
   const modalClose = document.getElementById('modal-close');
@@ -107,6 +111,7 @@
         aplicarPerfil(result.perfil);
         loginScreen.style.display = 'none';
         painelScreen.style.display = 'block';
+        atualizarStatusFichas(result.fichas);
         renderFichas(result.data || []);
       } else {
         loginError.textContent = (result && result.message) || 'Senha incorreta. Tente novamente.';
@@ -144,6 +149,7 @@
       if (result && result.status === 'ok') {
         sessionStorage.setItem('consolidacao_perfil', result.perfil || '');
         aplicarPerfil(result.perfil);
+        atualizarStatusFichas(result.fichas);
         renderFichas(result.data || []);
       } else {
         showToast((result && result.message) || 'Erro ao carregar fichas.', 'error');
@@ -153,6 +159,63 @@
       showToast('Erro de conexão ao carregar fichas.', 'error');
     }
   }
+
+  // --- Status das fichas (horário dos cultos / liberação manual) ---
+  function atualizarStatusFichas(fichas) {
+    if (!fichas) { fichasStatusBox.style.display = 'none'; return; }
+    let texto;
+    if (fichas.motivo === 'liberacao') {
+      const ate = new Date(fichas.liberadoAte).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      texto = '🟢 Fichas liberadas manualmente até as ' + ate;
+    } else if (fichas.motivo === 'culto') {
+      texto = '🟢 Fichas abertas — horário de culto' + (fichas.culto ? ' (' + fichas.culto + ')' : '');
+    } else if (fichas.motivo === 'sem_bloqueio') {
+      texto = '🟢 Fichas abertas (sem bloqueio de horário)';
+    } else {
+      texto = '🔒 Fichas fechadas — fora do horário dos cultos';
+    }
+    fichasStatusTexto.textContent = texto;
+    fichasStatusBox.className = 'fichas-status ' + (fichas.aberto ? 'aberto' : 'fechado');
+    liberarFichasBtn.style.display = fichas.motivo === 'liberacao' || fichas.motivo === 'sem_bloqueio' ? 'none' : '';
+    encerrarLiberacaoBtn.style.display = fichas.motivo === 'liberacao' ? '' : 'none';
+    fichasStatusBox.style.display = 'flex';
+  }
+
+  async function alterarLiberacao(action, botao, textoOriginal) {
+    botao.disabled = true;
+    botao.innerHTML = '<span class="spinner"></span> Aguarde...';
+    try {
+      const resp = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: action, senha: senhaAtual, horas: 4 })
+      });
+      const result = await resp.json();
+      if (result && result.status === 'ok') {
+        atualizarStatusFichas(result.fichas);
+        showToast(action === 'liberar_fichas' ? 'Fichas liberadas por 4 horas.' : 'Liberação encerrada.', 'success');
+      } else {
+        showToast((result && result.message) || 'Erro ao alterar a liberação.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Erro de conexão.', 'error');
+    } finally {
+      botao.disabled = false;
+      botao.textContent = textoOriginal;
+    }
+  }
+
+  liberarFichasBtn.addEventListener('click', () => {
+    if (!isAdministrador()) return;
+    if (!window.confirm('Liberar o envio de fichas pelas próximas 4 horas (culto especial)?')) return;
+    alterarLiberacao('liberar_fichas', liberarFichasBtn, '🔓 Liberar fichas por 4 horas');
+  });
+
+  encerrarLiberacaoBtn.addEventListener('click', () => {
+    if (!isAdministrador()) return;
+    alterarLiberacao('encerrar_liberacao', encerrarLiberacaoBtn, '🔒 Encerrar liberação');
+  });
 
   function renderFichas(data) {
     allFichas = data.slice().sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
