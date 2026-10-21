@@ -507,6 +507,7 @@ function contarFichasDoDia_(sheet, data) {
  *   📱 Telefone: (11) 99999-9999
  *   📍 Bairro: Centro
  *   🤝 Convidado(a) por: João Souza   (só aparece se foi convidado)
+ *   ✍️ Preenchido por: Ana Paula
  *
  *   ✅ Ficha preenchida com sucesso!
  */
@@ -527,6 +528,7 @@ function montarMensagemTelegram_(dados, numeroDoDia, data) {
   if (dados.quem_convidou && String(dados.quem_convidou).trim()) {
     linhas.push('🤝 <b>Convidado(a) por:</b> ' + htmlTelegram_(dados.quem_convidou));
   }
+  if (dados.preenchido_por) linhas.push('✍️ <b>Preenchido por:</b> ' + htmlTelegram_(dados.preenchido_por));
   linhas.push('');
   linhas.push('✅ <i>Ficha preenchida com sucesso!</i>');
   return linhas.join('\n');
@@ -584,7 +586,8 @@ function testarNotificacaoTelegram() {
     idade: '25',
     telefone: '(99) 99999-9999',
     bairro: 'Centro',
-    quem_convidou: 'Ciclano (teste)'
+    quem_convidou: 'Ciclano (teste)',
+    preenchido_por: 'Beltrano (teste)'
   }, 1, new Date());
 }
 
