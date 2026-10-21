@@ -27,6 +27,19 @@
       v = v.replace(/(\d{0,2})/, '($1');
     }
     telInput.value = v;
+    // Assim que ficar certo, já tira a marcação de erro.
+    if (celularValido(telInput.value)) markInvalid(telInput, false);
+  });
+
+  // Celular precisa ter DDD + 9 dígitos começando com 9 (ex: (11) 98765-4321).
+  function celularValido(valor) {
+    const digitos = valor.replace(/\D/g, '');
+    return digitos.length === 11 && digitos.charAt(2) === '9';
+  }
+
+  // Avisa já ao sair do campo, sem esperar o envio da ficha.
+  telInput.addEventListener('blur', () => {
+    if (telInput.value.trim()) markInvalid(telInput, !celularValido(telInput.value));
   });
 
   // --- Primeira letra de cada palavra em maiúscula ---
@@ -187,8 +200,7 @@
     }
 
     // telefone: mínimo de dígitos
-    const telDigits = telInput.value.replace(/\D/g, '');
-    if (telDigits.length < 10) {
+    if (!celularValido(telInput.value)) {
       markInvalid(telInput, true);
       valid = false;
     }
