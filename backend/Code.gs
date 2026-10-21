@@ -66,10 +66,14 @@ const TELEGRAM_CHAT_IDS = [
 // confira em Configurações do projeto > Fuso horário). Fora disso, a página
 // mostra que as fichas estão fechadas. Para cultos especiais em outros dias/
 // horários, o Administrador libera as fichas pelo painel.
+//
+// Os horários são editados pelo Administrador no painel (botão "Horários dos
+// cultos") e ficam guardados na propriedade do script HORARIOS_CONFIG. Os
+// valores abaixo são só o padrão, usado enquanto nada for salvo pelo painel.
 // =================================================================
-const BLOQUEIO_HORARIO_ATIVADO = true; // false = ficha aberta o tempo todo
+const BLOQUEIO_HORARIO_ATIVADO = true; // padrão: false = ficha aberta o tempo todo
 
-const HORAS_POR_CULTO = 4; // quanto tempo a ficha fica aberta a partir do início do culto
+const HORAS_POR_CULTO = 4; // padrão: quanto tempo a ficha fica aberta a partir do início do culto
 
 // Dias: 1 = segunda, 2 = terça, 3 = quarta, 4 = quinta, 5 = sexta, 6 = sábado, 7 = domingo
 const HORARIOS_CULTOS = [
@@ -79,9 +83,6 @@ const HORARIOS_CULTOS = [
   { nome: 'Domingo 17h', dias: [7], inicio: '17:00' },
   { nome: 'Domingo 19h', dias: [7], inicio: '19:00' },
 ];
-
-// Texto mostrado na ficha quando ela está fechada (atualize se mudar os horários acima).
-const TEXTO_HORARIOS_FICHA = 'Terça, quarta e quinta: 19h30 às 23h30 · Domingo: 10h às 14h e 15h às 23h';
 
 // Ordem das colunas na planilha — não mude a ordem sem atualizar o front-end.
 const COLUMNS = [
@@ -196,7 +197,7 @@ function doGet(e) {
       return jsonOutput_({ status: 'error', message: 'Senha incorreta.' });
     }
     const data = lerFichas_();
-    return jsonOutput_({ status: 'ok', perfil: perfil, data: data, fichas: statusFichas_() });
+    return jsonOutput_({ status: 'ok', perfil: perfil, data: data, fichas: statusFichas_(), horarios_config: configHorarios_() });
   }
 
   // Público: a ficha consulta se está aberta antes de mostrar o formulário.
@@ -250,12 +251,29 @@ function doPost(e) {
     }
     const props = PropertiesService.getScriptProperties();
     if (action === 'liberar_fichas') {
-      const horas = Math.min(Math.max(Number(body.horas) || HORAS_POR_CULTO, 1), 12);
+      const horas = Math.min(Math.max(Number(body.horas) || configHorarios_().horasPorCulto, 1), 12);
       props.setProperty('FICHAS_LIBERADAS_ATE', String(Date.now() + horas * 3600 * 1000));
     } else {
       props.deleteProperty('FICHAS_LIBERADAS_ATE');
     }
     return jsonOutput_({ status: 'ok', fichas: statusFichas_() });
+  }
+
+  // Salvar os horários dos cultos editados no painel.
+  if (action === 'salvar_horarios') {
+    const perfil = perfilDaSenha_(body.senha || '');
+    if (!perfil) {
+      return jsonOutput_({ status: 'error', message: 'Senha incorreta.' });
+    }
+    if (perfil !== PERFIL_ADMINISTRADOR) {
+      return jsonOutput_({ status: 'error', message: 'Apenas o Administrador pode alterar os horários.' });
+    }
+    const resultado = validarConfigHorarios_(body.config);
+    if (resultado.erro) {
+      return jsonOutput_({ status: 'error', message: resultado.erro });
+    }
+    PropertiesService.getScriptProperties().setProperty('HORARIOS_CONFIG', JSON.stringify(resultado.config));
+    return jsonOutput_({ status: 'ok', fichas: statusFichas_(), horarios_config: configHorarios_() });
   }
 
   return jsonOutput_({ status: 'error', message: 'Ação inválida.' });
@@ -266,35 +284,122 @@ function doPost(e) {
 // ---------------------------------------------------------------
 
 /**
+ * Configuração de horários em uso: a salva pelo painel (propriedade
+ * HORARIOS_CONFIG) ou, se não houver, os padrões do topo deste arquivo.
+ */
+function configHorarios_() {
+  const salvo = PropertiesService.getScriptProperties().getProperty('HORARIOS_CONFIG');
+  if (salvo) {
+    try {
+      const resultado = validarConfigHorarios_(JSON.parse(salvo));
+      if (!resultado.erro) return resultado.config;
+    } catch (err) {
+      console.error('HORARIOS_CONFIG inválido, usando o padrão: ' + err);
+    }
+  }
+  return {
+    bloqueioAtivado: BLOQUEIO_HORARIO_ATIVADO,
+    horasPorCulto: HORAS_POR_CULTO,
+    cultos: HORARIOS_CULTOS.map(c => ({ nome: c.nome, dias: c.dias.slice(), inicio: c.inicio }))
+  };
+}
+
+function validarConfigHorarios_(config) {
+  if (!config || typeof config !== 'object') return { erro: 'Configuração de horários inválida.' };
+  const horas = Number(config.horasPorCulto);
+  if (!(horas >= 1 && horas <= 12)) return { erro: 'O tempo de cada culto precisa ser entre 1 e 12 horas.' };
+  if (!Array.isArray(config.cultos)) return { erro: 'Lista de cultos inválida.' };
+  if (config.cultos.length > 30) return { erro: 'Máximo de 30 cultos.' };
+
+  const cultos = [];
+  for (let i = 0; i < config.cultos.length; i++) {
+    const c = config.cultos[i] || {};
+    const nome = String(c.nome || '').trim().slice(0, 60) || ('Culto ' + (i + 1));
+    const dias = Array.isArray(c.dias)
+      ? c.dias.map(Number).filter(d => d >= 1 && d <= 7).filter((d, j, arr) => arr.indexOf(d) === j).sort()
+      : [];
+    if (!dias.length) return { erro: 'Escolha pelo menos um dia para o culto "' + nome + '".' };
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(c.inicio || '').trim());
+    if (!m || Number(m[1]) > 23 || Number(m[2]) > 59) return { erro: 'Horário inválido no culto "' + nome + '".' };
+    cultos.push({ nome: nome, dias: dias, inicio: ('0' + Number(m[1])).slice(-2) + ':' + m[2] });
+  }
+  return { config: { bloqueioAtivado: config.bloqueioAtivado !== false, horasPorCulto: horas, cultos: cultos } };
+}
+
+/**
+ * Monta o texto dos horários mostrado na ficha fechada, juntando dias com os
+ * mesmos horários. Ex: "Terça, quarta e quinta: 19h30 às 23h30 · Domingo: 10h às 14h e 15h às 23h".
+ */
+function textoHorarios_(config) {
+  const NOMES = ['', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+  const duracao = config.horasPorCulto * 60;
+  const hora = min => {
+    const t = ((min % 1440) + 1440) % 1440;
+    const h = Math.floor(t / 60), m = Math.round(t % 60);
+    return h + 'h' + (m ? ('0' + m).slice(-2) : '');
+  };
+
+  // Janelas de cada dia, juntando as que se sobrepõem.
+  const porDia = {};
+  for (let dia = 1; dia <= 7; dia++) {
+    const janelas = config.cultos
+      .filter(c => c.dias.indexOf(dia) !== -1)
+      .map(c => { const p = c.inicio.split(':'); const ini = Number(p[0]) * 60 + Number(p[1]); return [ini, ini + duracao]; })
+      .sort((a, b) => a[0] - b[0]);
+    const juntas = [];
+    janelas.forEach(j => {
+      const ultima = juntas[juntas.length - 1];
+      if (ultima && j[0] <= ultima[1]) ultima[1] = Math.max(ultima[1], j[1]);
+      else juntas.push(j.slice());
+    });
+    if (juntas.length) porDia[dia] = juntas.map(j => hora(j[0]) + ' às ' + hora(j[1])).join(' e ');
+  }
+
+  // Agrupa os dias que têm exatamente o mesmo horário.
+  const grupos = [];
+  Object.keys(porDia).forEach(dia => {
+    const g = grupos.filter(x => x.texto === porDia[dia])[0];
+    if (g) g.dias.push(Number(dia));
+    else grupos.push({ texto: porDia[dia], dias: [Number(dia)] });
+  });
+  return grupos.map(g => {
+    const nomes = g.dias.map((d, i) => i === 0 ? NOMES[d] : NOMES[d].toLowerCase());
+    const lista = nomes.length > 1 ? nomes.slice(0, -1).join(', ') + ' e ' + nomes[nomes.length - 1] : nomes[0];
+    return lista + ': ' + g.texto;
+  }).join(' · ');
+}
+
+/**
  * Diz se a ficha está aberta agora: por estar no horário de algum culto
- * (HORARIOS_CULTOS) ou por uma liberação manual do Administrador.
+ * (configHorarios_) ou por uma liberação manual do Administrador.
  */
 function statusFichas_() {
   const agora = new Date();
+  const config = configHorarios_();
   const liberadoAteMs = Number(PropertiesService.getScriptProperties().getProperty('FICHAS_LIBERADAS_ATE')) || 0;
   const liberado = liberadoAteMs > agora.getTime();
   const base = {
-    horarios: TEXTO_HORARIOS_FICHA,
+    horarios: textoHorarios_(config),
     liberadoAte: liberado ? new Date(liberadoAteMs).toISOString() : null
   };
 
-  if (!BLOQUEIO_HORARIO_ATIVADO) return Object.assign(base, { aberto: true, motivo: 'sem_bloqueio' });
+  if (!config.bloqueioAtivado) return Object.assign(base, { aberto: true, motivo: 'sem_bloqueio' });
   if (liberado) return Object.assign(base, { aberto: true, motivo: 'liberacao' });
 
-  const culto = cultoEmAndamento_(agora);
+  const culto = cultoEmAndamento_(agora, config);
   if (culto) return Object.assign(base, { aberto: true, motivo: 'culto', culto: culto.nome });
   return Object.assign(base, { aberto: false, motivo: 'fechado' });
 }
 
-function cultoEmAndamento_(data) {
+function cultoEmAndamento_(data, config) {
   const fuso = Session.getScriptTimeZone();
   const diaHoje = Number(Utilities.formatDate(data, fuso, 'u')); // 1 = segunda ... 7 = domingo
   const diaOntem = diaHoje === 1 ? 7 : diaHoje - 1;
   const minutosAgora = Number(Utilities.formatDate(data, fuso, 'H')) * 60 + Number(Utilities.formatDate(data, fuso, 'm'));
-  const duracao = HORAS_POR_CULTO * 60;
+  const duracao = config.horasPorCulto * 60;
 
-  for (let i = 0; i < HORARIOS_CULTOS.length; i++) {
-    const c = HORARIOS_CULTOS[i];
+  for (let i = 0; i < config.cultos.length; i++) {
+    const c = config.cultos[i];
     const partes = c.inicio.split(':');
     const inicio = Number(partes[0]) * 60 + Number(partes[1] || 0);
     const fim = inicio + duracao;

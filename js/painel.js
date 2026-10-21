@@ -27,6 +27,16 @@
   const fichasStatusTexto = document.getElementById('fichas-status-texto');
   const liberarFichasBtn = document.getElementById('liberar-fichas-btn');
   const encerrarLiberacaoBtn = document.getElementById('encerrar-liberacao-btn');
+  const fichasStatusHorarios = document.getElementById('fichas-status-horarios');
+  const horariosBtn = document.getElementById('horarios-btn');
+  const horariosOverlay = document.getElementById('horarios-overlay');
+  const horariosClose = document.getElementById('horarios-close');
+  const horariosBloqueio = document.getElementById('horarios-bloqueio');
+  const horariosHoras = document.getElementById('horarios-horas');
+  const horariosLista = document.getElementById('horarios-lista');
+  const horariosAdd = document.getElementById('horarios-add');
+  const horariosSalvar = document.getElementById('horarios-salvar');
+  let horariosConfig = null;
 
   const modalOverlay = document.getElementById('modal-overlay');
   const modalClose = document.getElementById('modal-close');
@@ -112,6 +122,7 @@
         loginScreen.style.display = 'none';
         painelScreen.style.display = 'block';
         atualizarStatusFichas(result.fichas);
+        horariosConfig = result.horarios_config || null;
         renderFichas(result.data || []);
       } else {
         loginError.textContent = (result && result.message) || 'Senha incorreta. Tente novamente.';
@@ -150,6 +161,7 @@
         sessionStorage.setItem('consolidacao_perfil', result.perfil || '');
         aplicarPerfil(result.perfil);
         atualizarStatusFichas(result.fichas);
+        horariosConfig = result.horarios_config || null;
         renderFichas(result.data || []);
       } else {
         showToast((result && result.message) || 'Erro ao carregar fichas.', 'error');
@@ -175,6 +187,7 @@
       texto = '🔒 Fichas fechadas — fora do horário dos cultos';
     }
     fichasStatusTexto.textContent = texto;
+    fichasStatusHorarios.textContent = fichas.horarios ? 'Horários: ' + fichas.horarios : '';
     fichasStatusBox.className = 'fichas-status ' + (fichas.aberto ? 'aberto' : 'fechado');
     liberarFichasBtn.style.display = fichas.motivo === 'liberacao' || fichas.motivo === 'sem_bloqueio' ? 'none' : '';
     encerrarLiberacaoBtn.style.display = fichas.motivo === 'liberacao' ? '' : 'none';
@@ -215,6 +228,87 @@
   encerrarLiberacaoBtn.addEventListener('click', () => {
     if (!isAdministrador()) return;
     alterarLiberacao('encerrar_liberacao', encerrarLiberacaoBtn, '🔒 Encerrar liberação');
+  });
+
+  // --- Editor dos horários dos cultos (Administrador) ---
+  const NOMES_DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']; // índice + 1 = número do dia
+
+  function adicionarLinhaCulto(culto) {
+    const item = document.createElement('div');
+    item.className = 'culto-item';
+    item.innerHTML = `
+      <div class="culto-linha">
+        <input type="text" class="culto-nome" placeholder="Nome do culto (ex: Noite da Unção)">
+        <input type="time" class="culto-inicio" required>
+        <button type="button" class="culto-remover" title="Remover culto">&times;</button>
+      </div>
+      <div class="culto-dias">
+        ${NOMES_DIAS.map((n, i) => `<label><input type="checkbox" value="${i + 1}">${n}</label>`).join('')}
+      </div>`;
+    item.querySelector('.culto-nome').value = culto.nome || '';
+    item.querySelector('.culto-inicio').value = culto.inicio || '19:00';
+    item.querySelectorAll('.culto-dias input').forEach(cb => {
+      cb.checked = (culto.dias || []).includes(Number(cb.value));
+    });
+    item.querySelector('.culto-remover').addEventListener('click', () => item.remove());
+    horariosLista.appendChild(item);
+  }
+
+  horariosBtn.addEventListener('click', () => {
+    if (!isAdministrador()) return;
+    if (!horariosConfig) {
+      showToast('Não foi possível carregar os horários. Atualize o Apps Script e clique em Atualizar.', 'error');
+      return;
+    }
+    horariosBloqueio.checked = horariosConfig.bloqueioAtivado !== false;
+    horariosHoras.value = horariosConfig.horasPorCulto;
+    horariosLista.innerHTML = '';
+    (horariosConfig.cultos || []).forEach(adicionarLinhaCulto);
+    horariosOverlay.classList.add('show');
+  });
+
+  horariosAdd.addEventListener('click', () => adicionarLinhaCulto({ nome: '', inicio: '19:00', dias: [] }));
+  horariosClose.addEventListener('click', () => horariosOverlay.classList.remove('show'));
+  horariosOverlay.addEventListener('click', (e) => { if (e.target === horariosOverlay) horariosOverlay.classList.remove('show'); });
+
+  horariosSalvar.addEventListener('click', async () => {
+    const cultos = Array.from(horariosLista.querySelectorAll('.culto-item')).map(item => ({
+      nome: item.querySelector('.culto-nome').value.trim(),
+      inicio: item.querySelector('.culto-inicio').value,
+      dias: Array.from(item.querySelectorAll('.culto-dias input:checked')).map(cb => Number(cb.value))
+    }));
+    const semDia = cultos.find(c => !c.dias.length);
+    if (semDia) { showToast('Escolha pelo menos um dia para o culto "' + (semDia.nome || 'sem nome') + '".', 'error'); return; }
+    if (cultos.some(c => !c.inicio)) { showToast('Preencha o horário de todos os cultos.', 'error'); return; }
+
+    horariosSalvar.disabled = true;
+    horariosSalvar.innerHTML = '<span class="spinner"></span> Salvando...';
+    try {
+      const resp = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'salvar_horarios',
+          senha: senhaAtual,
+          config: { bloqueioAtivado: horariosBloqueio.checked, horasPorCulto: Number(horariosHoras.value), cultos: cultos }
+        })
+      });
+      const result = await resp.json();
+      if (result && result.status === 'ok') {
+        horariosConfig = result.horarios_config;
+        atualizarStatusFichas(result.fichas);
+        horariosOverlay.classList.remove('show');
+        showToast('Horários salvos!', 'success');
+      } else {
+        showToast((result && result.message) || 'Erro ao salvar os horários.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Erro de conexão ao salvar os horários.', 'error');
+    } finally {
+      horariosSalvar.disabled = false;
+      horariosSalvar.textContent = 'Salvar horários';
+    }
   });
 
   function renderFichas(data) {

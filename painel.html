@@ -39,8 +39,12 @@
   </div>
 
   <div class="fichas-status" id="fichas-status" style="display:none">
-    <span id="fichas-status-texto"></span>
+    <div>
+      <span id="fichas-status-texto"></span>
+      <div class="fichas-status-horarios" id="fichas-status-horarios"></div>
+    </div>
     <div class="fichas-status-acoes">
+      <button class="btn btn-secondary btn-sm admin-only" id="horarios-btn">⚙️ Horários dos cultos</button>
       <button class="btn btn-primary btn-sm admin-only" id="liberar-fichas-btn">🔓 Liberar fichas por 4 horas</button>
       <button class="btn btn-secondary btn-sm admin-only" id="encerrar-liberacao-btn">🔒 Encerrar liberação</button>
     </div>
@@ -139,6 +143,34 @@
       </div>
       <button class="btn btn-primary" id="modal-save-btn" style="margin-top:12px">Salvar</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL DE HORÁRIOS DOS CULTOS (Administrador) -->
+<div class="modal-overlay" id="horarios-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Horários dos cultos</h2>
+      <div class="modal-header-actions">
+        <button class="modal-close" id="horarios-close">&times;</button>
+      </div>
+    </div>
+    <p class="hint" style="margin-top:-6px">A ficha só aceita envios a partir do início de cada culto, pelo tempo definido abaixo.</p>
+
+    <label class="check-line">
+      <input type="checkbox" id="horarios-bloqueio">
+      Bloquear fichas fora do horário dos cultos
+    </label>
+
+    <div class="field" style="margin-top:14px">
+      <label for="horarios-horas">Ficha aberta por quantas horas em cada culto</label>
+      <input type="number" id="horarios-horas" min="1" max="12" step="0.5" style="max-width:120px">
+    </div>
+
+    <div id="horarios-lista"></div>
+    <button class="btn btn-secondary btn-sm" id="horarios-add" style="width:auto">+ Adicionar culto</button>
+
+    <button class="btn btn-primary" id="horarios-salvar" style="margin-top:18px">Salvar horários</button>
   </div>
 </div>
 
