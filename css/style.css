@@ -484,6 +484,7 @@ td.col-check {
 .fichas-status.fechado { border-color: var(--primary-light); background: var(--primary-lighter); color: var(--primary-dark); }
 .fichas-status-acoes { display: flex; gap: 8px; flex-wrap: wrap; }
 .fichas-status-acoes .btn { width: auto; }
+.fichas-status-acoes .liberar-horas { width: auto; padding: 7px 10px; font-size: 0.82rem; }
 .fichas-status-horarios { font-size: 0.8rem; font-weight: 500; opacity: 0.85; margin-top: 3px; }
 
 /* Editor de horários dos cultos */

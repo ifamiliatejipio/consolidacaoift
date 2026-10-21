@@ -45,7 +45,18 @@
     </div>
     <div class="fichas-status-acoes">
       <button class="btn btn-secondary btn-sm admin-only" id="horarios-btn">⚙️ Horários dos cultos</button>
-      <button class="btn btn-primary btn-sm admin-only" id="liberar-fichas-btn">🔓 Liberar fichas por 4 horas</button>
+      <select class="liberar-horas admin-only" id="liberar-horas" title="Por quanto tempo liberar as fichas">
+        <option value="1">1 hora</option>
+        <option value="2">2 horas</option>
+        <option value="3">3 horas</option>
+        <option value="4" selected>4 horas</option>
+        <option value="5">5 horas</option>
+        <option value="6">6 horas</option>
+        <option value="8">8 horas</option>
+        <option value="10">10 horas</option>
+        <option value="12">12 horas</option>
+      </select>
+      <button class="btn btn-primary btn-sm admin-only" id="liberar-fichas-btn">🔓 Liberar fichas</button>
       <button class="btn btn-secondary btn-sm admin-only" id="encerrar-liberacao-btn">🔒 Encerrar liberação</button>
     </div>
   </div>

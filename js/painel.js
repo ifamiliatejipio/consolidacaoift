@@ -26,6 +26,7 @@
   const fichasStatusBox = document.getElementById('fichas-status');
   const fichasStatusTexto = document.getElementById('fichas-status-texto');
   const liberarFichasBtn = document.getElementById('liberar-fichas-btn');
+  const liberarHorasSelect = document.getElementById('liberar-horas');
   const encerrarLiberacaoBtn = document.getElementById('encerrar-liberacao-btn');
   const fichasStatusHorarios = document.getElementById('fichas-status-horarios');
   const horariosBtn = document.getElementById('horarios-btn');
@@ -190,6 +191,7 @@
     fichasStatusHorarios.textContent = fichas.horarios ? 'Horários: ' + fichas.horarios : '';
     fichasStatusBox.className = 'fichas-status ' + (fichas.aberto ? 'aberto' : 'fechado');
     liberarFichasBtn.style.display = fichas.motivo === 'liberacao' || fichas.motivo === 'sem_bloqueio' ? 'none' : '';
+    liberarHorasSelect.style.display = liberarFichasBtn.style.display;
     encerrarLiberacaoBtn.style.display = fichas.motivo === 'liberacao' ? '' : 'none';
     fichasStatusBox.style.display = 'flex';
   }
@@ -201,12 +203,12 @@
       const resp = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: action, senha: senhaAtual, horas: 4 })
+        body: JSON.stringify({ action: action, senha: senhaAtual, horas: Number(liberarHorasSelect.value) })
       });
       const result = await resp.json();
       if (result && result.status === 'ok') {
         atualizarStatusFichas(result.fichas);
-        showToast(action === 'liberar_fichas' ? 'Fichas liberadas por 4 horas.' : 'Liberação encerrada.', 'success');
+        showToast(action === 'liberar_fichas' ? 'Fichas liberadas por ' + horasTexto(liberarHorasSelect.value) + '.' : 'Liberação encerrada.', 'success');
       } else {
         showToast((result && result.message) || 'Erro ao alterar a liberação.', 'error');
       }
@@ -219,10 +221,23 @@
     }
   }
 
+  function horasTexto(h) {
+    return Number(h) === 1 ? '1 hora' : h + ' horas';
+  }
+
+  // Lembra o último tempo escolhido neste navegador.
+  try {
+    const salvo = localStorage.getItem('consolidacao_liberar_horas');
+    if (salvo && liberarHorasSelect.querySelector('option[value="' + salvo + '"]')) liberarHorasSelect.value = salvo;
+  } catch (err) { /* sem localStorage: fica o padrão de 4 horas */ }
+  liberarHorasSelect.addEventListener('change', () => {
+    try { localStorage.setItem('consolidacao_liberar_horas', liberarHorasSelect.value); } catch (err) { /* ignora */ }
+  });
+
   liberarFichasBtn.addEventListener('click', () => {
     if (!isAdministrador()) return;
-    if (!window.confirm('Liberar o envio de fichas pelas próximas 4 horas (culto especial)?')) return;
-    alterarLiberacao('liberar_fichas', liberarFichasBtn, '🔓 Liberar fichas por 4 horas');
+    if (!window.confirm('Liberar o envio de fichas pelas próximas ' + horasTexto(liberarHorasSelect.value) + ' (culto especial)?')) return;
+    alterarLiberacao('liberar_fichas', liberarFichasBtn, '🔓 Liberar fichas');
   });
 
   encerrarLiberacaoBtn.addEventListener('click', () => {

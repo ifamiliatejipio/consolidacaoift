@@ -181,7 +181,7 @@ Horários configurados (cada culto deixa a ficha aberta por **4 horas** a partir
 - **Terça, quarta e quinta** (Noite da Unção, 19h30): 19h30 às 23h30
 - **Domingo** (10h, 15h, 17h e 19h): 10h às 14h e 15h às 23h
 
-**Culto especial:** no painel, o **Administrador** vê um quadro com o status das fichas e o botão **"🔓 Liberar fichas por 4 horas"**. Depois de liberar, aparece o botão **"🔒 Encerrar liberação"** para fechar antes do prazo. O Gestor vê o status, mas não os botões.
+**Culto especial:** no painel, o **Administrador** vê um quadro com o status das fichas, um seletor de tempo (1 a 12 horas) e o botão **"🔓 Liberar fichas"**. Depois de liberar, aparece o botão **"🔒 Encerrar liberação"** para fechar antes do prazo. O Gestor vê o status, mas não os botões.
 
 **Mudar os horários pelo painel:** o Administrador clica em **"⚙️ Horários dos cultos"** no quadro de status. Lá dá para adicionar ou remover cultos, mudar nome, dias, **horário de início e horário de fim** de cada culto, e ligar/desligar o bloqueio. Se o horário de fim ficar vazio, a ficha fica aberta pelas **horas padrão** (campo no topo da tela). Um fim menor que o início vale como depois da meia-noite (ex: 22h às 2h). Ao salvar, vale na hora (não precisa publicar nova versão), e o texto dos horários mostrado na ficha é atualizado sozinho. Os horários ficam guardados na propriedade do script `HORARIOS_CONFIG`; os valores no topo do `Code.gs` são só o padrão inicial.
 
