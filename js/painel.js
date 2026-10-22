@@ -89,12 +89,63 @@
     return perfilAtual === 'administrador';
   }
 
+  // --- Cópia local da última lista (só enquanto a aba estiver aberta) ---
+  // O Apps Script pode levar alguns segundos para responder. Para o painel não
+  // ficar em branco esperando, a última lista recebida fica guardada na aba
+  // (sessionStorage, apagada ao fechar a aba ou clicar em Sair) e aparece na
+  // hora; a lista atualizada do servidor chega em seguida, em segundo plano.
+  const CACHE_KEY = 'consolidacao_cache';
+  let dadosNaTela = false;
+  let carregando = false;
+
+  function salvarCache(result) {
+    try {
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+        perfil: result.perfil,
+        fichas: result.fichas,
+        horarios_config: result.horarios_config,
+        data: result.data || []
+      }));
+    } catch (err) { /* sem espaço ou sem sessionStorage: segue sem cópia local */ }
+  }
+
+  function lerCache() {
+    try {
+      const salvo = sessionStorage.getItem(CACHE_KEY);
+      return salvo ? JSON.parse(salvo) : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  // Depois de editar/excluir fichas aqui no painel, mantém a cópia local igual à tela.
+  function atualizarCacheLocal() {
+    const cache = lerCache();
+    if (!cache) return;
+    cache.data = allFichas;
+    salvarCache(cache);
+  }
+
+  function limparCache() {
+    try { sessionStorage.removeItem(CACHE_KEY); } catch (err) { /* ignora */ }
+  }
+
+  function aplicarResultadoLista(result) {
+    sessionStorage.setItem('consolidacao_perfil', result.perfil || '');
+    aplicarPerfil(result.perfil);
+    atualizarStatusFichas(result.fichas);
+    horariosConfig = result.horarios_config || null;
+    renderFichas(result.data || []);
+  }
+
   // --- Sessão (mantém login apenas durante a aba aberta) ---
   senhaAtual = sessionStorage.getItem('consolidacao_senha') || '';
   aplicarPerfil(sessionStorage.getItem('consolidacao_perfil') || '');
   if (senhaAtual) {
     loginScreen.style.display = 'none';
     painelScreen.style.display = 'block';
+    const cache = lerCache();
+    if (cache) aplicarResultadoLista(cache);
     carregarFichas();
   }
 
@@ -118,13 +169,10 @@
       if (result && result.status === 'ok') {
         senhaAtual = senha;
         sessionStorage.setItem('consolidacao_senha', senha);
-        sessionStorage.setItem('consolidacao_perfil', result.perfil || '');
-        aplicarPerfil(result.perfil);
         loginScreen.style.display = 'none';
         painelScreen.style.display = 'block';
-        atualizarStatusFichas(result.fichas);
-        horariosConfig = result.horarios_config || null;
-        renderFichas(result.data || []);
+        aplicarResultadoLista(result);
+        salvarCache(result);
       } else {
         loginError.textContent = (result && result.message) || 'Senha incorreta. Tente novamente.';
         loginError.style.display = 'block';
@@ -142,34 +190,47 @@
   logoutBtn.addEventListener('click', () => {
     sessionStorage.removeItem('consolidacao_senha');
     sessionStorage.removeItem('consolidacao_perfil');
+    limparCache();
     senhaAtual = '';
     aplicarPerfil('');
+    allFichas = [];
+    fichasFiltradasAtual = [];
+    dadosNaTela = false;
+    tbody.innerHTML = '';
     painelScreen.style.display = 'none';
     loginScreen.style.display = 'flex';
     senhaInput.value = '';
   });
 
-  refreshBtn.addEventListener('click', carregarFichas);
+  refreshBtn.addEventListener('click', () => carregarFichas());
 
   async function carregarFichas() {
-    if (!checkConfigured()) return;
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:24px; color:#6b5f5c;">Carregando...</td></tr>';
+    if (!checkConfigured() || carregando) return;
+    carregando = true;
+    // Se já tem fichas na tela, elas continuam lá enquanto a lista nova chega.
+    if (!dadosNaTela) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:24px; color:#6b5f5c;">Carregando...</td></tr>';
+    }
+    refreshBtn.disabled = true;
+    refreshBtn.innerHTML = '<span class="spinner"></span> Atualizando...';
     try {
       const url = `${API_URL}?action=list&senha=${encodeURIComponent(senhaAtual)}`;
       const resp = await fetch(url);
       const result = await resp.json();
+      if (!senhaAtual) return; // saiu do painel enquanto carregava
       if (result && result.status === 'ok') {
-        sessionStorage.setItem('consolidacao_perfil', result.perfil || '');
-        aplicarPerfil(result.perfil);
-        atualizarStatusFichas(result.fichas);
-        horariosConfig = result.horarios_config || null;
-        renderFichas(result.data || []);
+        aplicarResultadoLista(result);
+        salvarCache(result);
       } else {
         showToast((result && result.message) || 'Erro ao carregar fichas.', 'error');
       }
     } catch (err) {
       console.error(err);
       showToast('Erro de conexão ao carregar fichas.', 'error');
+    } finally {
+      carregando = false;
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = '↻ Atualizar';
     }
   }
 
@@ -336,7 +397,11 @@
 
   function renderFichas(data) {
     allFichas = data.slice().sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
-    selectedIds.clear();
+    dadosNaTela = true;
+    // Mantém marcadas as fichas que continuam existindo (a lista pode ser
+    // atualizada em segundo plano enquanto a pessoa está selecionando).
+    const idsExistentes = new Set(allFichas.map(f => f.id));
+    selectedIds = new Set(Array.from(selectedIds).filter(id => idsExistentes.has(id)));
     atualizarStats(allFichas);
     popularFiltroMes(allFichas);
     popularFiltroDia(allFichas);
@@ -646,6 +711,7 @@
     // remove da lista local todas as fichas que foram excluídas com sucesso
     // (as que falharam continuam em selectedIds, então permanecem na lista)
     allFichas = allFichas.filter(f => !(ids.includes(f.id) && !selectedIds.has(f.id)));
+    atualizarCacheLocal();
 
     atualizarStats(allFichas);
     popularFiltroMes(allFichas);
@@ -765,6 +831,7 @@
           currentFicha.encaminhado_rede = modalRedeInput.value.trim();
           currentFicha.rede_categoria = modalRedeCategoria.value;
         }
+        atualizarCacheLocal();
         atualizarStats(allFichas);
         aplicarFiltros();
         fecharModal();
@@ -808,6 +875,7 @@
       if (result && result.status === 'ok') {
         showToast('Ficha excluída com sucesso.', 'success');
         allFichas = allFichas.filter(x => x.id !== idParaExcluir);
+        atualizarCacheLocal();
         atualizarStats(allFichas);
         popularFiltroMes(allFichas);
         popularFiltroDia(allFichas);
