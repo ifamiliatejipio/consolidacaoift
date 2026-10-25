@@ -270,9 +270,21 @@
 
   verificarHorario();
 
+  // --- Código de envio ---
+  // Cada ficha preenchida ganha um código único. Se ela for enviada de novo
+  // (toque duplo, ou a pessoa tenta outra vez porque a resposta demorou), o
+  // servidor reconhece o código e não grava a mesma ficha duas vezes.
+  function novoEnvioId() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
+  }
+  let envioId = novoEnvioId();
+  const textoPadraoBanner = errorBanner.textContent;
+
   form.addEventListener('submit', async function (e) {
     e.preventDefault();
     errorBanner.classList.remove('show');
+    errorBanner.textContent = textoPadraoBanner;
 
     if (!validate()) {
       errorBanner.classList.add('show');
@@ -288,6 +300,7 @@
 
     const data = collectData();
     data.action = 'create';
+    data.envio_id = envioId;
 
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner"></span> Enviando...';
@@ -305,12 +318,19 @@
         successScreen.classList.add('show');
       } else if (result && result.code === 'fichas_fechadas') {
         mostrarFechado(result.fichas);
+      } else if (result && result.code === 'ficha_duplicada') {
+        // Mesmo telefone já cadastrado hoje: mostra o aviso no topo da ficha.
+        errorBanner.textContent = result.message;
+        errorBanner.classList.add('show');
+        errorBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
         throw new Error((result && result.message) || 'Erro desconhecido');
       }
     } catch (err) {
       console.error(err);
-      showToast('Não foi possível enviar a ficha. Verifique sua internet e tente novamente.', 'error');
+      // A ficha pode ter chegado mesmo assim (resposta lenta); reenviar é seguro,
+      // pois o código de envio impede que ela seja gravada duas vezes.
+      showToast('Não foi possível confirmar o envio. Tente enviar de novo — se a ficha já tiver chegado, ela não será duplicada.', 'error');
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = 'Enviar ficha';
@@ -318,6 +338,7 @@
   });
 
   newFormBtn.addEventListener('click', () => {
+    envioId = novoEnvioId(); // nova ficha, novo código
     form.reset();
     form.querySelectorAll('.conditional.show').forEach(el => el.classList.remove('show'));
     form.querySelectorAll('.field.invalid').forEach(el => el.classList.remove('invalid'));

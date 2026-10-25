@@ -56,6 +56,7 @@
   let senhaAtual = '';
   let perfilAtual = '';
   let selectedIds = new Set();
+  let telefonesRepetidos = new Set(); // telefones (só dígitos) que aparecem em mais de uma ficha
   // Ordenação da tabela ao clicar no cabeçalho (padrão: mais recentes primeiro)
   let ordemCampo = 'data';
   let ordemDirecao = 'desc';
@@ -398,6 +399,7 @@
   function renderFichas(data) {
     allFichas = data.slice().sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
     dadosNaTela = true;
+    marcarTelefonesRepetidos();
     // Mantém marcadas as fichas que continuam existindo (a lista pode ser
     // atualizada em segundo plano enquanto a pessoa está selecionando).
     const idsExistentes = new Set(allFichas.map(f => f.id));
@@ -406,6 +408,22 @@
     popularFiltroMes(allFichas);
     popularFiltroDia(allFichas);
     aplicarFiltros();
+  }
+
+  // --- Possíveis fichas duplicadas (mesmo telefone em mais de uma ficha) ---
+  function digitosTelefone(f) {
+    return String(f.telefone || '').replace(/\D/g, '');
+  }
+
+  function marcarTelefonesRepetidos() {
+    const vistos = new Set();
+    telefonesRepetidos = new Set();
+    allFichas.forEach(f => {
+      const tel = digitosTelefone(f);
+      if (tel.length < 8) return;
+      if (vistos.has(tel)) telefonesRepetidos.add(tel);
+      else vistos.add(tel);
+    });
   }
 
   // --- Filtro por dia de cadastro ---
@@ -607,7 +625,7 @@
       tr.innerHTML = `
         <td class="col-check"><input type="checkbox" class="row-checkbox" data-id="${escapeHtml(f.id)}"></td>
         <td>${formatarData(f.timestamp)}</td>
-        <td>${escapeHtml(f.nome_completo || '–')}</td>
+        <td>${escapeHtml(f.nome_completo || '–')}${telefonesRepetidos.has(digitosTelefone(f)) ? ' <span class="tag dup" title="Existe outra ficha com o mesmo telefone">⚠ Possível duplicada</span>' : ''}</td>
         <td>${escapeHtml(f.idade || '–')}</td>
         <td>${escapeHtml(f.telefone || '–')}</td>
         <td>${escapeHtml(f.bairro || '–')}</td>
@@ -712,6 +730,7 @@
     // (as que falharam continuam em selectedIds, então permanecem na lista)
     allFichas = allFichas.filter(f => !(ids.includes(f.id) && !selectedIds.has(f.id)));
     atualizarCacheLocal();
+    marcarTelefonesRepetidos();
 
     atualizarStats(allFichas);
     popularFiltroMes(allFichas);
@@ -876,6 +895,7 @@
         showToast('Ficha excluída com sucesso.', 'success');
         allFichas = allFichas.filter(x => x.id !== idParaExcluir);
         atualizarCacheLocal();
+        marcarTelefonesRepetidos();
         atualizarStats(allFichas);
         popularFiltroMes(allFichas);
         popularFiltroDia(allFichas);

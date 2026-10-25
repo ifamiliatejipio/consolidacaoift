@@ -189,6 +189,18 @@ O horário usado é o fuso do projeto (⚙️ Configurações do projeto → Fus
 
 ---
 
+## Fichas repetidas
+
+O sistema evita que a mesma pessoa seja cadastrada várias vezes:
+
+- **Mesma ficha enviada de novo** (toque duplo, ou a pessoa tentou outra vez porque a resposta demorou): cada ficha preenchida tem um código de envio invisível. Se ela chegar de novo, o servidor não grava outra vez (e o Telegram não repete o aviso) — só confirma "Ficha enviada com sucesso!".
+- **Mesmo telefone no mesmo dia**: se já existe ficha com aquele celular cadastrada hoje, a nova não é salva e a ficha mostra: *"Já existe uma ficha para este telefone, cadastrada hoje às 19:42 (Nome)..."*. Em outro dia, a pessoa pode ter uma nova ficha.
+- **No painel**, fichas com telefone repetido (inclusive as antigas) ganham a etiqueta **⚠ Possível duplicada** ao lado do nome, para o Administrador revisar e excluir a sobra.
+
+A planilha ganha sozinha uma coluna nova no final, `envio_id`, usada para isso.
+
+---
+
 ## Notificação automática no Telegram (opcional)
 
 O sistema pode avisar no Telegram assim que uma ficha é enviada, usando a **API oficial de bots do Telegram** — gratuita, estável, e sem os problemas de confiabilidade dos serviços não-oficiais de WhatsApp (não funciona nem foi projetada para WhatsApp Business, pois é outro aplicativo).

@@ -113,7 +113,8 @@ const COLUMNS = [
   'qual_rede',
   'encaminhado_rede',
   'rede_categoria',
-  'preenchido_por'
+  'preenchido_por',
+  'envio_id' // código único gerado pela página a cada ficha preenchida (evita gravar a mesma ficha 2x)
 ];
 
 // Campos obrigatórios ao criar uma nova ficha (validação também existe no front-end).
@@ -481,11 +482,25 @@ function criarFicha_(body) {
   });
 
   // A trava garante que duas fichas enviadas ao mesmo tempo não recebam o
-  // mesmo número do dia.
+  // mesmo número do dia, nem passem as duas pela checagem de repetidas.
   const lock = LockService.getScriptLock();
   let numeroDoDia = null;
   lock.waitLock(20000);
   try {
+    const repetida = verificarFichaRepetida_(sheet, body, timestamp);
+    if (repetida && repetida.mesmoEnvio) {
+      // A mesma ficha chegou de novo (toque duplo ou reenvio após demora/erro de
+      // conexão): ela já está gravada, então só confirma, sem gravar nem avisar de novo.
+      return jsonOutput_({ status: 'ok', id: repetida.id, repetida: true });
+    }
+    if (repetida) {
+      return jsonOutput_({
+        status: 'error',
+        code: 'ficha_duplicada',
+        message: 'Já existe uma ficha para este telefone, cadastrada hoje às ' + repetida.hora +
+          ' (' + repetida.nome + '). Se precisar corrigir algo, fale com a equipe de consolidação.'
+      });
+    }
     sheet.appendRow(row);
     SpreadsheetApp.flush();
     numeroDoDia = contarFichasDoDia_(sheet, timestamp);
@@ -501,6 +516,44 @@ function criarFicha_(body) {
   }
 
   return jsonOutput_({ status: 'ok', id: id });
+}
+
+/**
+ * Procura uma ficha já gravada que seja a mesma desta:
+ * - mesmo envio_id (a mesma ficha enviada de novo) -> { mesmoEnvio: true, id }
+ * - mesmo telefone cadastrado no mesmo dia          -> { nome, hora }
+ * Retorna null se não houver repetição.
+ */
+function verificarFichaRepetida_(sheet, body, data) {
+  if (sheet.getLastRow() < 2) return null;
+  const valores = sheet.getDataRange().getValues();
+  const header = valores[0];
+  const col = nome => header.indexOf(nome);
+  const iId = col('id'), iTs = col('timestamp'), iTel = col('telefone'), iNome = col('nome_completo'), iEnvio = col('envio_id');
+
+  const envioId = String(body.envio_id || '').trim();
+  const telefone = String(body.telefone || '').replace(/\D/g, '');
+  const fuso = Session.getScriptTimeZone();
+  const hoje = Utilities.formatDate(data, fuso, 'yyyy-MM-dd');
+
+  for (let r = 1; r < valores.length; r++) {
+    const linha = valores[r];
+    if (envioId && iEnvio !== -1 && String(linha[iEnvio]) === envioId) {
+      return { mesmoEnvio: true, id: linha[iId] };
+    }
+  }
+
+  if (!telefone || iTel === -1 || iTs === -1) return null;
+  for (let r = 1; r < valores.length; r++) {
+    const linha = valores[r];
+    if (String(linha[iTel]).replace(/\D/g, '') !== telefone) continue;
+    const v = linha[iTs];
+    const d = v instanceof Date ? v : (v ? new Date(v) : null);
+    if (d && !isNaN(d.getTime()) && Utilities.formatDate(d, fuso, 'yyyy-MM-dd') === hoje) {
+      return { nome: String(linha[iNome] || 'sem nome'), hora: Utilities.formatDate(d, fuso, 'HH:mm') };
+    }
+  }
+  return null;
 }
 
 /**
