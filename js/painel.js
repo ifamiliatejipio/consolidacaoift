@@ -213,7 +213,7 @@
     carregando = true;
     // Se já tem fichas na tela, elas continuam lá enquanto a lista nova chega.
     if (!dadosNaTela) {
-      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:24px; color:#6b5f5c;">Carregando...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:24px; color:#6b5f5c;">Carregando...</td></tr>';
     }
     refreshBtn.disabled = true;
     refreshBtn.innerHTML = '<span class="spinner"></span> Atualizando...';
@@ -635,6 +635,7 @@
         <td>${escapeHtml(decisaoResumo(f.decisao))}</td>
         <td>${escapeHtml(resumoCulto(f))}</td>
         <td><span class="tag ${rede.tag}">${escapeHtml(rede.texto)}</span></td>
+        <td class="col-pdf"><button type="button" class="row-pdf-btn" title="Salvar a ficha de ${escapeHtml(f.nome_completo || '')} em PDF">⬇ PDF</button></td>
       `;
       const checkbox = tr.querySelector('.row-checkbox');
       checkbox.checked = selectedIds.has(f.id);
@@ -643,6 +644,11 @@
         if (checkbox.checked) selectedIds.add(f.id);
         else selectedIds.delete(f.id);
         atualizarBarraSelecao();
+      });
+      // PDF direto da linha, sem abrir a ficha nem selecionar.
+      tr.querySelector('.row-pdf-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        abrirImpressaoFichas([f]);
       });
       tr.addEventListener('click', () => abrirModal(f));
       tbody.appendChild(tr);

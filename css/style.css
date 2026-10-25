@@ -437,6 +437,19 @@ tbody tr:hover { background: var(--primary-lighter); }
 }
 .tag.pending { background: #fdf1d6; color: #93690a; }
 .tag.done { background: var(--success-bg); color: var(--success); }
+.col-pdf { width: 1%; text-align: center; white-space: nowrap; }
+.row-pdf-btn {
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 9px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--primary-dark);
+  cursor: pointer;
+}
+.row-pdf-btn:hover { border-color: var(--primary); background: var(--primary-lighter); }
 .tag.dup { background: #fde8e6; color: #b3261e; margin-left: 4px; white-space: nowrap; }
 
 .table-scroll {
