@@ -99,7 +99,7 @@ Esse campo aparece na ficha com 3 opções principais: **Noite da Unção**, **D
 
 - **Noite da Unção** → escolher o dia: Terça, Quarta ou Quinta.
 - **Domingo** → escolher o horário: 10h, 15h, 17h ou 19h.
-- **Culto especial** → escolher entre **Volta de ECD**, **Celebração de Redes** ou **Outros** (em "Outros" aparece uma caixa de texto para escrever qual foi o culto).
+- **Culto especial** → escolher entre **Volta de ECD**, **Celebração de Redes**, **Topo** ou **Outros** (em "Outros" aparece uma caixa de texto para escrever qual foi o culto).
 
 Essa informação aparece no painel na coluna "Culto" da tabela, no detalhe de cada ficha e no PDF exportado.
 
