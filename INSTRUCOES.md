@@ -163,6 +163,15 @@ O perfil é reconhecido pela senha digitada na tela de login, e aparece no topo 
 
 > Enquanto a senha do Administrador não for configurada, ninguém consegue excluir fichas — só o acesso de Gestor funciona.
 
+### Usuários extras (uma senha para cada pessoa)
+
+Para dar acesso a mais alguém sem passar a sua senha, crie uma senha só para a pessoa em ⚙️ Configurações do projeto → Propriedades do script:
+
+- **Gestor:** propriedade `GESTOR_PASSWORD_NOME` (ex: `GESTOR_PASSWORD_ANNA`) com a senha dela como valor.
+- **Administrador:** propriedade `ADMINISTRADOR_PASSWORD_NOME`.
+
+A pessoa entra no painel com essa senha e aparece no topo como **"Gestor · Anna"**. Cada senha precisa ser diferente das outras. Para tirar o acesso, é só apagar a propriedade dela. Não precisa publicar nova versão para criar ou apagar usuários (só na primeira vez, para o código que reconhece esses usuários começar a valer).
+
 ---
 
 ## Fichas individuais em PDF (várias de uma vez)

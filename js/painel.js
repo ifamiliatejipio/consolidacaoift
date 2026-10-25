@@ -79,11 +79,13 @@
   // --- Perfil de acesso ---
   // Gestor: pode tudo, menos excluir fichas. Administrador: pode tudo.
   // A regra vale de verdade no backend; aqui só escondemos os botões de exclusão.
-  function aplicarPerfil(perfil) {
+  function aplicarPerfil(perfil, nome) {
     perfilAtual = perfil || '';
     document.body.classList.toggle('perfil-administrador', perfilAtual === 'administrador');
-    perfilBadge.textContent = perfilAtual === 'administrador' ? 'Administrador'
+    const rotulo = perfilAtual === 'administrador' ? 'Administrador'
       : perfilAtual === 'gestor' ? 'Gestor' : '';
+    // Usuários extras (ex: GESTOR_PASSWORD_ANNA) aparecem com o nome: "Gestor · Anna".
+    perfilBadge.textContent = rotulo && nome ? rotulo + ' · ' + nome : rotulo;
   }
 
   function isAdministrador() {
@@ -103,6 +105,7 @@
     try {
       sessionStorage.setItem(CACHE_KEY, JSON.stringify({
         perfil: result.perfil,
+        nome: result.nome,
         fichas: result.fichas,
         horarios_config: result.horarios_config,
         data: result.data || []
@@ -133,7 +136,7 @@
 
   function aplicarResultadoLista(result) {
     sessionStorage.setItem('consolidacao_perfil', result.perfil || '');
-    aplicarPerfil(result.perfil);
+    aplicarPerfil(result.perfil, result.nome);
     atualizarStatusFichas(result.fichas);
     horariosConfig = result.horarios_config || null;
     renderFichas(result.data || []);

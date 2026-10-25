@@ -194,12 +194,12 @@ function doGet(e) {
   const action = e.parameter.action;
 
   if (action === 'list') {
-    const perfil = perfilDaSenha_(e.parameter.senha || '');
-    if (!perfil) {
+    const usuario = usuarioDaSenha_(e.parameter.senha || '');
+    if (!usuario) {
       return jsonOutput_({ status: 'error', message: 'Senha incorreta.' });
     }
     const data = lerFichas_();
-    return jsonOutput_({ status: 'ok', perfil: perfil, data: data, fichas: statusFichas_(), horarios_config: configHorarios_() });
+    return jsonOutput_({ status: 'ok', perfil: usuario.perfil, nome: usuario.nome, data: data, fichas: statusFichas_(), horarios_config: configHorarios_() });
   }
 
   // Público: a ficha consulta se está aberta antes de mostrar o formulário.
@@ -779,15 +779,46 @@ function adicionarColunasFaltantes_(sheet) {
  * null se a senha não confere. Senha ainda não configurada = bloqueia acesso.
  */
 function perfilDaSenha_(senha) {
-  if (!senha) return null;
-  const props = PropertiesService.getScriptProperties();
-  const senhaAdministrador = props.getProperty('ADMINISTRADOR_PASSWORD');
-  // ADMIN_PASSWORD era o nome da senha única na versão anterior: ela continua
-  // valendo como senha do Gestor até configurarSenha ser rodada de novo.
-  const senhaGestor = props.getProperty('GESTOR_PASSWORD') || props.getProperty('ADMIN_PASSWORD');
+  const usuario = usuarioDaSenha_(senha);
+  return usuario ? usuario.perfil : null;
+}
 
-  if (senhaAdministrador && senha === senhaAdministrador) return PERFIL_ADMINISTRADOR;
-  if (senhaGestor && senha === senhaGestor) return PERFIL_GESTOR;
+/**
+ * Descobre quem entrou pela senha: { perfil, nome } ou null.
+ *
+ * Senhas principais: ADMINISTRADOR_PASSWORD e GESTOR_PASSWORD (ou ADMIN_PASSWORD,
+ * nome da senha única na versão anterior, que continua valendo como Gestor).
+ *
+ * Usuários extras, cada um com sua senha: crie nas Propriedades do script uma
+ * propriedade GESTOR_PASSWORD_<NOME> (ex: GESTOR_PASSWORD_ANNA) ou
+ * ADMINISTRADOR_PASSWORD_<NOME>. Para tirar o acesso da pessoa, é só apagar
+ * a propriedade dela.
+ */
+function usuarioDaSenha_(senha) {
+  if (!senha) return null;
+  const props = PropertiesService.getScriptProperties().getProperties();
+  const nomeDe = chave => {
+    const nome = chave.split('_PASSWORD_')[1] || '';
+    return nome ? nome.charAt(0) + nome.slice(1).toLowerCase().replace(/_/g, ' ') : '';
+  };
+
+  // Administrador tem prioridade se a mesma senha estiver em dois lugares.
+  if (props.ADMINISTRADOR_PASSWORD && senha === props.ADMINISTRADOR_PASSWORD) {
+    return { perfil: PERFIL_ADMINISTRADOR, nome: '' };
+  }
+  const chaves = Object.keys(props);
+  for (let i = 0; i < chaves.length; i++) {
+    if (chaves[i].indexOf('ADMINISTRADOR_PASSWORD_') === 0 && props[chaves[i]] && senha === props[chaves[i]]) {
+      return { perfil: PERFIL_ADMINISTRADOR, nome: nomeDe(chaves[i]) };
+    }
+  }
+  const senhaGestor = props.GESTOR_PASSWORD || props.ADMIN_PASSWORD;
+  if (senhaGestor && senha === senhaGestor) return { perfil: PERFIL_GESTOR, nome: '' };
+  for (let i = 0; i < chaves.length; i++) {
+    if (chaves[i].indexOf('GESTOR_PASSWORD_') === 0 && props[chaves[i]] && senha === props[chaves[i]]) {
+      return { perfil: PERFIL_GESTOR, nome: nomeDe(chaves[i]) };
+    }
+  }
   return null;
 }
 
