@@ -262,6 +262,17 @@ Se uma ficha for cadastrada e, por qualquer motivo, o envio do Telegram falhar (
 
 ---
 
+## Atualização automática do site
+
+Quem deixa a ficha ou o painel aberto (ex: tablet na recepção) recebe as atualizações do site sozinho: a página confere a cada 5 minutos (e sempre que a aba volta a ficar visível) se saiu uma versão nova e se recarrega — só quando é seguro:
+
+- **Ficha:** antes de alguém começar a digitar, ou ao tocar em "Preencher nova ficha". Nunca no meio de uma ficha.
+- **Painel:** sem ficha aberta, sem fichas marcadas e sem nada sendo salvo. O login e a lista continuam.
+
+Para quem mantém o código: ao publicar mudanças no site, troque a versão em `versao.json` e nas tags `<meta name="versao-site">` e `?v=` de `index.html` e `painel.html` (todas com o mesmo valor).
+
+---
+
 ## Trocar a logo depois
 
 Basta substituir o arquivo `assets/logo.png` por outra imagem com o mesmo nome (de preferência PNG com fundo transparente).

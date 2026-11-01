@@ -142,6 +142,18 @@
     renderFichas(result.data || []);
   }
 
+  // --- Atualização automática do site (js/atualizacao.js) ---
+  // Recarrega para pegar uma versão nova só quando não atrapalha: sem ficha
+  // aberta, sem fichas marcadas e sem nada sendo salvo. O login e a lista
+  // continuam (ficam guardados na aba), então a troca é quase imperceptível.
+  window.podeAtualizarAgora = () =>
+    !modalOverlay.classList.contains('show') &&
+    !horariosOverlay.classList.contains('show') &&
+    selectedIds.size === 0 &&
+    !carregando &&
+    !document.querySelector('button:disabled .spinner') &&
+    !(loginScreen.style.display !== 'none' && senhaInput.value);
+
   // --- Sessão (mantém login apenas durante a aba aberta) ---
   senhaAtual = sessionStorage.getItem('consolidacao_senha') || '';
   aplicarPerfil(sessionStorage.getItem('consolidacao_perfil') || '');

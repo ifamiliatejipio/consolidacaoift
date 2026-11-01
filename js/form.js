@@ -279,6 +279,14 @@
     return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
   }
   let envioId = novoEnvioId();
+
+  // --- Atualização automática do site (js/atualizacao.js) ---
+  // Só recarrega a página para pegar uma versão nova se ninguém estiver no
+  // meio de uma ficha: antes de começar a digitar, ou com a ficha fechada.
+  let formMexido = false;
+  form.addEventListener('input', () => { formMexido = true; });
+  form.addEventListener('change', () => { formMexido = true; });
+  window.podeAtualizarAgora = () => !formMexido || closedScreen.classList.contains('show');
   const textoPadraoBanner = errorBanner.textContent;
 
   form.addEventListener('submit', async function (e) {
@@ -339,6 +347,9 @@
 
   newFormBtn.addEventListener('click', () => {
     envioId = novoEnvioId(); // nova ficha, novo código
+    formMexido = false;
+    // Se saiu versão nova do site enquanto a ficha era preenchida, atualiza agora.
+    if (window.tentarAtualizarSite) window.tentarAtualizarSite();
     form.reset();
     form.querySelectorAll('.conditional.show').forEach(el => el.classList.remove('show'));
     form.querySelectorAll('.field.invalid').forEach(el => el.classList.remove('invalid'));
