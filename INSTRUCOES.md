@@ -97,9 +97,9 @@ Sim. A planilha "Fichas" tem uma coluna **`timestamp`** logo depois do `id`, com
 
 Esse campo aparece na ficha com 3 opções principais: **Noite da Unção**, **Domingo** e **Culto especial**. Dependendo da escolha, aparece um sub-campo:
 
-- **Noite da Unção** → escolher o dia: Terça, Quarta ou Quinta.
-- **Domingo** → escolher o horário: 10h, 15h, 17h ou 19h.
-- **Culto especial** → escolher entre **Volta de ECD**, **Celebração de Redes**, **Topo** ou **Outros** (em "Outros" aparece uma caixa de texto para escrever qual foi o culto).
+- **Noite da Unção** → escolher o dia: Quarta ou Quinta.
+- **Domingo** → escolher o horário: 10h, 16h ou 19h.
+- **Culto especial** → escolher entre **Volta de ECD**, **Celebração de Redes**, **Topo**, **Batismo** ou **Outros** (em "Outros" aparece uma caixa de texto para escrever qual foi o culto).
 
 Essa informação aparece no painel na coluna "Culto" da tabela, no detalhe de cada ficha e no PDF exportado.
 
@@ -187,8 +187,8 @@ A tabela do painel e o relatório em PDF também mostram a **idade** de cada pes
 A ficha só aceita envios durante os cultos. Fora do horário, a página mostra **"Fichas fechadas no momento"** com os horários, e confere sozinha a cada minuto. Quando o horário chega, o formulário aparece.
 
 Horários configurados (cada culto deixa a ficha aberta por **4 horas** a partir do início):
-- **Terça, quarta e quinta** (Noite da Unção, 19h30): 19h30 às 23h30
-- **Domingo** (10h, 15h, 17h e 19h): 10h às 14h e 15h às 23h
+- **Quarta e quinta** (Noite da Unção, 19h30): 19h30 às 23h30
+- **Domingo** (10h, 16h e 19h): 10h às 14h e 16h às 23h
 
 **Culto especial:** no painel, o **Administrador** vê um quadro com o status das fichas, um seletor de tempo (1 a 12 horas) e o botão **"🔓 Liberar fichas"**. Depois de liberar, aparece o botão **"🔒 Encerrar liberação"** para fechar antes do prazo. O Gestor vê o status, mas não os botões.
 

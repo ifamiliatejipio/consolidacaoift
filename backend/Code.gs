@@ -78,10 +78,9 @@ const HORAS_POR_CULTO = 4; // padrão: quanto tempo a ficha fica aberta nos cult
 // Dias: 1 = segunda, 2 = terça, 3 = quarta, 4 = quinta, 5 = sexta, 6 = sábado, 7 = domingo
 // "fim" é opcional (ex: fim: '22:00'); sem ele, a ficha fica aberta por HORAS_POR_CULTO.
 const HORARIOS_CULTOS = [
-  { nome: 'Noite da Unção', dias: [2, 3, 4], inicio: '19:30' },
+  { nome: 'Noite da Unção', dias: [3, 4], inicio: '19:30' },
   { nome: 'Domingo 10h', dias: [7], inicio: '10:00' },
-  { nome: 'Domingo 15h', dias: [7], inicio: '15:00' },
-  { nome: 'Domingo 17h', dias: [7], inicio: '17:00' },
+  { nome: 'Domingo 16h', dias: [7], inicio: '16:00' },
   { nome: 'Domingo 19h', dias: [7], inicio: '19:00' },
 ];
 
