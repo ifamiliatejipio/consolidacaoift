@@ -11,6 +11,9 @@
   const filterRede = document.getElementById('filter-rede');
   const filterCategoria = document.getElementById('filter-categoria');
   const filterMes = document.getElementById('filter-mes');
+  const filterIdadeMin = document.getElementById('filter-idade-min');
+  const filterIdadeMax = document.getElementById('filter-idade-max');
+  const tableTotal = document.getElementById('table-total');
   const filterDia = document.getElementById('filter-dia');
   const reportBtn = document.getElementById('report-btn');
   const tbody = document.getElementById('fichas-tbody');
@@ -522,9 +525,16 @@
     const categoria = filterCategoria.value;
     const mes = filterMes.value;
     const dia = filterDia.value === 'hoje' ? diaChave(new Date()) : filterDia.value;
+    const faixa = faixaIdade();
 
     let filtrado = allFichas.filter(f => {
       if (dia && diaChave(f.timestamp) !== dia) return false;
+      if (faixa) {
+        const idade = parseInt(f.idade, 10);
+        if (isNaN(idade)) return false;
+        if (faixa.min !== null && idade < faixa.min) return false;
+        if (faixa.max !== null && idade > faixa.max) return false;
+      }
       if (decisao && f.decisao !== decisao) return false;
       if (mes && mesChave(f.timestamp) !== mes) return false;
       const temRede = !!(f.encaminhado_rede && f.encaminhado_rede.trim());
@@ -541,7 +551,33 @@
     fichasFiltradasAtual = ordenarFichas(filtrado);
     atualizarCabecalhosOrdem();
     renderTable(fichasFiltradasAtual);
+    tableTotal.textContent = 'Total: ' + fichasFiltradasAtual.length + ' ficha(s)' +
+      (faixa ? ' · ' + textoFaixaIdade(faixa) : '');
   }
+
+  // --- Filtro por faixa de idade ("de" / "até"; pode usar só um dos dois) ---
+  function faixaIdade() {
+    const ler = el => {
+      const v = el.value.trim();
+      if (v === '') return null;
+      const n = parseInt(v, 10);
+      return isNaN(n) ? null : n;
+    };
+    let min = ler(filterIdadeMin);
+    let max = ler(filterIdadeMax);
+    if (min === null && max === null) return null;
+    if (min !== null && max !== null && min > max) { const t = min; min = max; max = t; }
+    return { min: min, max: max };
+  }
+
+  function textoFaixaIdade(faixa) {
+    if (faixa.min !== null && faixa.max !== null) return 'idade de ' + faixa.min + ' a ' + faixa.max + ' anos';
+    if (faixa.min !== null) return 'idade a partir de ' + faixa.min + ' anos';
+    return 'idade até ' + faixa.max + ' anos';
+  }
+
+  filterIdadeMin.addEventListener('input', aplicarFiltros);
+  filterIdadeMax.addEventListener('input', aplicarFiltros);
 
   // --- Ordenação por coluna ---
   // Valores vazios ficam sempre no fim, em qualquer direção.
@@ -1078,6 +1114,8 @@
     if (filterDecisao.value) partes.push('Decisão: ' + filterDecisao.options[filterDecisao.selectedIndex].textContent);
     if (filterRede.value) partes.push('Rede: ' + filterRede.options[filterRede.selectedIndex].textContent);
     if (filterCategoria.value) partes.push('Categoria: ' + filterCategoria.value);
+    const faixa = faixaIdade();
+    if (faixa) partes.push(textoFaixaIdade(faixa).replace(/^idade/, 'Idade:'));
     if (searchInput.value.trim()) partes.push('Busca: "' + searchInput.value.trim() + '"');
     return partes.length ? partes.join(' · ') : 'Nenhum filtro aplicado (todos os registros)';
   }
@@ -1104,7 +1142,8 @@
       ? `<table>
           <thead><tr><th>Data</th><th>Nome</th><th>Idade</th><th>Telefone</th><th>Bairro</th><th>Decisão</th><th>Culto</th><th>Rede</th></tr></thead>
           <tbody>${linhas}</tbody>
-        </table>`
+        </table>
+        <div class="total">Total: ${dados.length} ficha(s)</div>`
       : `<p class="vazio">Nenhuma ficha encontrada com os filtros aplicados.</p>`;
 
     return `<!DOCTYPE html>
@@ -1127,6 +1166,7 @@
   tbody td { padding:7px 10px; border-bottom:1px solid #f1e9e8; }
   tbody tr:nth-child(even) { background:#fdfaf9; }
   .vazio { color:#6b5f5c; font-size:13px; padding:20px 0; }
+  .total { margin-top:10px; padding:8px 10px; text-align:right; font-size:12px; font-weight:700; color:#8f221d; border-top:2px solid #8f221d; }
   .footer { margin-top:18px; font-size:9px; color:#b7aba7; }
 </style>
 </head>
