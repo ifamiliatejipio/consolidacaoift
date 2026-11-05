@@ -2,13 +2,13 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="versao-site" content="2026-11-05.2">
+<meta name="versao-site" content="2026-11-05.3">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Painel de Consolidação</title>
 <link rel="icon" href="assets/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=2026-11-05.2">
+<link rel="stylesheet" href="css/style.css?v=2026-11-05.3">
 </head>
 <body>
 
@@ -70,11 +70,12 @@
   </div>
 
   <div class="toolbar">
+   <div class="toolbar-row">
     <select id="filter-dia" class="filter-dia" title="Dia de cadastro das fichas">
       <option value="hoje">Hoje</option>
       <option value="">Todas as datas</option>
     </select>
-    <input type="text" id="search-input" placeholder="Buscar por nome, bairro ou telefone...">
+    <input type="text" id="search-input" placeholder="🔍 Nome, bairro ou telefone">
     <select id="filter-decisao">
       <option value="">Todas as decisões</option>
       <option value="Voltando para Jesus">Voltando para Jesus</option>
@@ -85,8 +86,10 @@
       <option value="pendente">Pendente de encaminhar</option>
       <option value="feito">Já encaminhado</option>
     </select>
+   </div>
+   <div class="toolbar-row">
     <select id="filter-categoria">
-      <option value="">Todas as categorias</option>
+      <option value="">Todas (categoria)</option>
       <option value="Eles">Eles</option>
       <option value="Elas">Elas</option>
       <option value="Topo">Topo</option>
@@ -100,9 +103,10 @@
       <span>a</span>
       <input type="number" id="filter-idade-max" min="0" max="120" placeholder="até" inputmode="numeric">
     </div>
-    <button class="btn btn-secondary" id="limpar-filtros-btn" title="Tirar todos os filtros e mostrar todas as fichas">✕ Limpar filtros</button>
+    <button class="btn btn-secondary" id="limpar-filtros-btn" title="Tirar todos os filtros e mostrar todas as fichas">✕ Limpar</button>
     <button class="btn btn-secondary" id="refresh-btn">↻ Atualizar</button>
-    <button class="btn btn-primary" id="report-btn">📄 Gerar relatório PDF</button>
+    <button class="btn btn-primary" id="report-btn" title="Gerar relatório PDF com as fichas da tabela">📄 Relatório PDF</button>
+   </div>
   </div>
 
   <div class="bulk-bar" id="bulk-bar" style="display:none">
@@ -197,8 +201,8 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=2026-11-05.2"></script>
-<script src="js/painel.js?v=2026-11-05.2"></script>
-<script src="js/atualizacao.js?v=2026-11-05.2"></script>
+<script src="js/config.js?v=2026-11-05.3"></script>
+<script src="js/painel.js?v=2026-11-05.3"></script>
+<script src="js/atualizacao.js?v=2026-11-05.3"></script>
 </body>
 </html>

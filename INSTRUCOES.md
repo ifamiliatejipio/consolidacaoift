@@ -111,7 +111,7 @@ Essa informação aparece no painel na coluna "Culto" da tabela, no detalhe de c
 
 No painel, a barra de filtros agora tem um seletor **"Todos os meses"**, populado automaticamente com os meses em que existem fichas cadastradas (mais recente primeiro).
 
-Ao lado, o botão **"📄 Gerar relatório PDF"** abre a janela de impressão do navegador (mesma técnica da exportação de ficha individual — sem depender de nenhum serviço externo) com uma tabela de todas as fichas que estão sendo exibidas naquele momento:
+Ao lado, o botão **"📄 Relatório PDF"** abre a janela de impressão do navegador (mesma técnica da exportação de ficha individual — sem depender de nenhum serviço externo) com uma tabela de todas as fichas que estão sendo exibidas naquele momento:
 
 - Se você deixar tudo em "Todos" (mês, decisão, rede) e a busca vazia, o relatório sai **completo**, com todas as fichas.
 - Se aplicar qualquer filtro antes de clicar — por exemplo, escolher "Agosto de 2026" no mês, ou digitar um nome na busca — o relatório sai **filtrado**, mostrando só o que apareceu na tabela.
