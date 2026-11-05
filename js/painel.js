@@ -14,6 +14,7 @@
   const filterIdadeMin = document.getElementById('filter-idade-min');
   const filterIdadeMax = document.getElementById('filter-idade-max');
   const tableTotal = document.getElementById('table-total');
+  const limparFiltrosBtn = document.getElementById('limpar-filtros-btn');
   const filterDia = document.getElementById('filter-dia');
   const reportBtn = document.getElementById('report-btn');
   const tbody = document.getElementById('fichas-tbody');
@@ -578,6 +579,19 @@
 
   filterIdadeMin.addEventListener('input', aplicarFiltros);
   filterIdadeMax.addEventListener('input', aplicarFiltros);
+
+  // --- Limpar filtros: volta a mostrar todas as fichas, de todas as datas ---
+  limparFiltrosBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    filterDecisao.value = '';
+    filterRede.value = '';
+    filterCategoria.value = '';
+    filterMes.value = '';
+    filterDia.value = '';
+    filterIdadeMin.value = '';
+    filterIdadeMax.value = '';
+    aplicarFiltros();
+  });
 
   // --- Ordenação por coluna ---
   // Valores vazios ficam sempre no fim, em qualquer direção.
